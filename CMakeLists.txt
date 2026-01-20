@@ -1,11 +1,28 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.20)
 project(ME_NUPRC C)
 
-set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
-add_executable(ME_NUPRC main.c
-        character.c
-        character.h
-        tray.c
-        tray.h
-        settings.h)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+pkg_check_modules(SDL2TTF REQUIRED SDL2_ttf)
+
+add_executable(ME_NUPRC
+        src/main.c
+        src/character.c
+        src/tray.c
+        src/IOManager.c)
+
+target_include_directories(ME_NUPRC PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${SDL2_INCLUDE_DIRS}
+        ${SDL2TTF_INCLUDE_DIRS})
+
+target_link_directories(ME_NUPRC PRIVATE
+        ${SDL2_LIBRARY_DIRS}
+        ${SDL2TTF_LIBRARY_DIRS})
+
+target_link_libraries(ME_NUPRC PRIVATE
+        ${SDL2_LIBRARIES}
+        ${SDL2TTF_LIBRARIES})
