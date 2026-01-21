@@ -4,89 +4,94 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include "settings.h"
 
 /**
-* Initialise la SDL
-*/
-void initSDL();
-
-/**
-* Créé une fenêtre SDL
-* @param winName Nom de la fenêtre
-* @param winWidth Largeur de la fenêtre
-* @param winHeigth Hauteur de la fenêtre
-*/
-SDL_Window * createWindow(char winName[], int winWidth, int winHeigth);
-
-/**
-* Créé un renderer
-* @param win La fenêtre SDL
-*/
-SDL_Renderer * createRenderer(SDL_Window *win);
-
-/**
-* Charge une texture dans le rendu graphique
-* @param file Le chemin vers la texture
-* @param ren Un pointeur vers la structure contenant le rendu
-*/
-SDL_Texture* loadTexture(const char* file, SDL_Renderer *ren);
-
-/**
-* Met la texture dans le rendu graphique à une position (x,y) dans le repère écran avec une taille de size
-* @param tex La texture à mettre dans le rendu
-* @param ren Un pointeur vers la structure contenant le rendu
-* @param x La coordonnée x dans le repère écran
-* @param y La coordonnée y dans le repère écran
-* @param size La taille de la texture sur l'écran
-*/
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, int width, int height);
-
-/**
-* Initialise la bibliothèque TTF
-*/
-void initTTF();
-
-/**
-* Créé une police de caractère avec un taille de police donnée en paramètre
-* @param fontPath Le chemin vers le fichier .ttf contenant la font
-* @param fontSize La taille de la font
-*/
-TTF_Font* createFont(char fontPath[], int fontSize);
-
-/**
-* Met dans le rendu graphique un texte à la position (x,y) dans le repère écran avec une taille de (hsize x wsize)
-* @param x La coordonnée x dans le repère écran
-* @param y La coordonnée y dans le repère écran
-* @param wsize La largeur du message sur l'écran
-* @param hsize La hauteur du message sur l'écran
-* @param font La police utilisée
-* @param color La SDL_Color utilisée
-* @param ren un pointeur vers une structure qui contient l'état du rendu graphique
-*/
-void printText(int x,int y,char *text, int wsize, int hsize,TTF_Font* font, SDL_Color color, SDL_Renderer *ren);
-
-
-/**
-* Met à jour l'affichage de l'écran
-* @param ren Un pointeur sur une structure contenant l'état du rendu
-*/
-void updateDisplay(SDL_Renderer *ren);
-
-/* Vide le rendu graphique
- * @param ren Un pointeur sur une structure contenant l'état du rendu
+ * @brief Initialise la SDL
  */
-void clearRenderer(SDL_Renderer *ren);
+void IO_initSDL(void);
 
-/* Gestion de la souris
- * @ Retourne le caractère ('h','b','d','g') correspondant à la direction choisie
+/**
+ * @brief Créé une fenêtre SDL
+ * @param windowName Nom de la fenêtre
+ * @param windowWidth Largeur de la fenêtre
+ * @param windowHeight Hauteur de la fenêtre
  */
-char processKeyboard();
+SDL_Window* IO_createWindow(char windowName[], int windowWidth, int windowHeight);
 
-/* Libère la mémoire de la fenêtre et du renderer
- * @param win Un pointeur sur une structure contenant la fenêtre
- * @param ren Un pointeur sur une structure contenant l'état du rendu
+/**
+ * @brief Créé un renderer
+ * @param window La fenêtre SDL
  */
-void QuitSDL(SDL_Window *win, SDL_Renderer *ren);
+SDL_Renderer* IO_createRenderer(SDL_Window *window);
+
+/**
+ * @brief Charge une texture dans le rendu graphique
+ * @param filePath Le chemin vers la texture
+ * @param renderer Un pointeur vers la structure contenant le rendu
+ */
+SDL_Texture* IO_loadTexture(const char* filePath, SDL_Renderer *renderer);
+
+/**
+ * @brief Met la texture dans le rendu graphique à une position (x,y) dans le repère écran avec une taille donnée
+ * @param texture La texture à mettre dans le rendu
+ * @param renderer Un pointeur vers la structure contenant le rendu
+ * @param x La coordonnée x dans le repère écran
+ * @param y La coordonnée y dans le repère écran
+ * @param width Largeur de la texture
+ * @param height Hauteur de la texture
+ */
+void IO_renderTexture(SDL_Texture *texture, SDL_Renderer *renderer, int x, int y, int width, int height);
+
+/**
+ * @brief Initialise la bibliothèque TTF
+ */
+void IO_initTTF(void);
+
+/**
+ * @brief Créé une police de caractère avec une taille de police donnée en paramètre
+ * @param fontPath Le chemin vers le fichier .ttf contenant la font
+ * @param fontSize La taille de la font
+ */
+TTF_Font* IO_createFont(char fontPath[], int fontSize);
+
+/**
+ * @brief Met dans le rendu graphique un texte à la position (x,y) dans le repère écran avec une taille donnée
+ * @param x La coordonnée x dans le repère écran
+ * @param y La coordonnée y dans le repère écran
+ * @param text Le texte à afficher
+ * @param width La largeur du message sur l'écran
+ * @param height La hauteur du message sur l'écran
+ * @param font La police utilisée
+ * @param color La SDL_Color utilisée
+ * @param renderer Un pointeur vers une structure qui contient l'état du rendu graphique
+ */
+void IO_printText(int x, int y, char *text, int width, int height, TTF_Font* font, SDL_Color color, SDL_Renderer *renderer);
+
+/**
+ * @brief Met à jour l'affichage de l'écran
+ * @param renderer Un pointeur sur une structure contenant l'état du rendu
+ */
+void IO_updateDisplay(SDL_Renderer *renderer);
+
+/**
+ * @brief Vide le rendu graphique
+ * @param renderer Un pointeur sur une structure contenant l'état du rendu
+ */
+void IO_clearRenderer(SDL_Renderer *renderer);
+
+/**
+ * @brief Gestion du clavier
+ * @return Une Direction (DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT) ou -1 si aucune touche n'a été pressée
+ */
+Direction IO_inputDirection(void);
+
+/**
+ * @brief Libère la mémoire de la fenêtre et du renderer
+ * @param window Un pointeur sur une structure contenant la fenêtre
+ * @param renderer Un pointeur sur une structure contenant l'état du rendu
+ */
+void IO_quit(SDL_Window *window, SDL_Renderer *renderer);
 
 #endif
 

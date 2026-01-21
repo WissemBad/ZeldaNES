@@ -1,51 +1,65 @@
-//
-// Created by Wissem.
-// Character Management
-//
-
 #include "character.h"
+#include "IOManager.h"
 #include <stdio.h>
 
-// Initialisation d'un personnage
-Character initCharacter(char* name) {
-    Character c;
-    c.name = name;
-    c.pos[0] = 0;
-    c.pos[1] = 0;
-    c.move_count = 0;
-    return c;
+Character Character_init(char* name, char* texturePath, SDL_Renderer *renderer) {
+    Character character;
+    character.name = name;
+    character.position[0] = 4;
+    character.position[1] = 4;
+    character.moveCount = 0;
+
+    if (texturePath != NULL) {
+        character.texture = IO_loadTexture(texturePath, renderer);
+    } else {
+        character.texture = IO_loadTexture(ASSET_TEXTURE_PLAYER_DEFAULT, renderer);
+    }
+
+    return character;
 }
 
-// Déplacement d'un personnage
-Character moveCharacter(Character c, Direction dir) {
-    switch (dir) {
+Character Character_move(Character character, Direction direction) {
+    switch (direction) {
         case DIR_RIGHT:
-            c.pos[0] += 1;
-            c.move_count++;
+            character.position[0] += 1;
+            character.moveCount++;
             break;
         case DIR_LEFT:
-            c.pos[0] -= 1;
-            c.move_count++;
+            character.position[0] -= 1;
+            character.moveCount++;
             break;
         case DIR_UP:
-            c.pos[1] -= 1;
-            c.move_count++;
+            character.position[1] -= 1;
+            character.moveCount++;
             break;
         case DIR_DOWN:
-            c.pos[1] += 1;
-            c.move_count++;
+            character.position[1] += 1;
+            character.moveCount++;
             break;
         default:
             break;
     }
-    return c;
+    return character;
 }
 
-// Affichage d'un personnage
-void showCharacter(Character c) {
+void Character_draw(Character character, SDL_Renderer *renderer) {
+    int pixelX = character.position[0] * GRID_CELL_SIZE;
+    int pixelY = character.position[1] * GRID_CELL_SIZE;
+    IO_renderTexture(character.texture, renderer, pixelX, pixelY, GRID_CELL_SIZE, GRID_CELL_SIZE);
+}
+
+void Character_print(Character character) {
     printf("-- Informations du personnage --\n");
-    printf("Nom : %s\n", c.name);
-    printf("Position (x, y) : %d, %d\n", c.pos[0], c.pos[1]);
-    printf("Déplacements : %d\n", c.move_count);
+    printf("Nom : %s\n", character.name);
+    printf("Position (x, y) : %d, %d\n", character.position[0], character.position[1]);
+    printf("Deplacements : %d\n", character.moveCount);
     printf("--------------------------------\n");
 }
+
+void Character_destroy(Character *character) {
+    if (character != NULL && character->texture != NULL) {
+        SDL_DestroyTexture(character->texture);
+        character->texture = NULL;
+    }
+}
+

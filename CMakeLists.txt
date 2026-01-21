@@ -11,8 +11,9 @@ pkg_check_modules(SDL2TTF REQUIRED SDL2_ttf)
 add_executable(ME_NUPRC
         src/main.c
         src/character.c
-        src/tray.c
-        src/IOManager.c)
+        src/grid.c
+        src/IOManager.c
+        src/game.c)
 
 target_include_directories(ME_NUPRC PRIVATE
         ${CMAKE_SOURCE_DIR}/include
