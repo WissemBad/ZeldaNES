@@ -8,7 +8,7 @@
 #define GRID_COLS 10
 #define GRID_ROWS 10
 
-#define WINDOW_TITLE  "My SDL2 VideoGame"
+#define WINDOW_TITLE  "SDL2 NUPRC Game"
 #define WINDOW_WIDTH  (GRID_CELL_SIZE * GRID_COLS)
 #define WINDOW_HEIGHT (GRID_CELL_SIZE * GRID_ROWS)
 
@@ -21,8 +21,7 @@
 #define CELL_CHAR_VMOVE  '!'
 #define CELL_CHAR_HMOVE  '-'
 
-#define GAME_MAX_MOVES  20
-#define GAME_MAX_LEVELS 10
+#define GAME_MAX_MOVES  10
 
 typedef enum {
     DIR_UP,
