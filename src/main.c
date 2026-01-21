@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "settings.h"
 #include "IOManager.h"
 #include "game.h"

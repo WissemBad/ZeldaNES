@@ -1,7 +1,6 @@
 #ifndef IOMANAGER_H_
 #define IOMANAGER_H_
 
-#include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "settings.h"
