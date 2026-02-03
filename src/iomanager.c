@@ -25,7 +25,7 @@ static InputAction keyToAction(SDL_Keycode key) {
         case SDLK_d:    return INPUT_ACTION_MOVE_RIGHT;
 
         // Actions méta
-        case SDLK_ESCAPE:   return INPUT_ACTION_QUIT;
+        case SDLK_ESCAPE:
         case SDLK_p:        return INPUT_ACTION_PAUSE_TOGGLE;
 
         // Interface utilisateur

@@ -7,13 +7,17 @@
 #define NUPRC_LINK_H
 
 #include "character.h"
+#include "animation.h"
 
 //==============================================================================
 // CONSTANTES
 //==============================================================================
 
 /** Durée du cooldown d'attaque (en frames) */
-#define LINK_ATTACK_COOLDOWN    20
+#define LINK_ATTACK_COOLDOWN    25
+
+/** Durée pendant laquelle l'attaque peut toucher (en frames) */
+#define LINK_ATTACK_ACTIVE_TIME 15
 
 /** Durée d'invincibilité après avoir été touché (en frames) */
 #define LINK_INVINCIBILITY_TIME 90
@@ -39,12 +43,14 @@ typedef enum {
 
 /** Structure du joueur (hérite de Character) */
 typedef struct {
-    Character     base;             /**< Données de base du personnage */
-    LinkDirection direction;        /**< Direction actuelle */
-    bool          isAttacking;      /**< true si en train d'attaquer */
-    int           attackCooldown;   /**< Frames restantes avant prochaine attaque */
-    int           invincibilityTimer; /**< Frames d'invincibilité restantes */
-    bool          isInvincible;     /**< true si Link est invincible */
+    Character       base;               /**< Données de base du personnage */
+    LinkDirection   direction;          /**< Direction actuelle */
+    bool            isAttacking;        /**< true si en train d'attaquer */
+    int             attackCooldown;     /**< Frames restantes avant prochaine attaque */
+    int             invincibilityTimer; /**< Frames d'invincibilité restantes */
+    bool            isInvincible;       /**< true si Link est invincible */
+    SpriteSet       sprites;            /**< Ensemble des sprites animés */
+    AnimationState  animation;          /**< État de l'animation */
 } Link;
 
 //==============================================================================
@@ -68,6 +74,12 @@ void Link_getAttackPosition(const Link* link, int attackPos[2]);
 
 /** Vérifie si Link est actuellement en train d'attaquer */
 bool Link_isAttacking(const Link* link);
+
+/** Déplace Link et met à jour l'animation */
+void Link_move(Link* link, const int delta[2]);
+
+/** Dessine Link avec l'animation appropriée */
+void Link_draw(const Link* link, SDL_Renderer* renderer);
 
 /** Libère les ressources allouées pour Link */
 void Link_destroy(Link* link);

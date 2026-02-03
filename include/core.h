@@ -50,7 +50,7 @@
 //==============================================================================
 
 #define GAME_MAX_ENEMIES    10
-#define GAME_INITIAL_LIVES  3
+#define GAME_INITIAL_LIVES  10
 #define GAME_INITIAL_SCORE  0
 #define GAME_INITIAL_ROOM   {7, 7}
 

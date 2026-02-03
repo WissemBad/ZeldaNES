@@ -140,21 +140,53 @@ static void checkEnemyCollisions(Game* game) {
 
 /**
  * @brief Gère l'attaque de Link et les dégâts aux ennemis
+ * L'attaque touche pendant toute sa durée active et a une zone d'effet en arc
  */
 static void handleAttack(Game* game) {
+    // L'attaque ne touche que pendant la phase active (début de l'attaque)
     if (!Link_isAttacking(&game->player)) return;
+    if (game->player.attackCooldown < LINK_ATTACK_COOLDOWN - LINK_ATTACK_ACTIVE_TIME) return;
 
     int attackPos[2];
     Link_getAttackPosition(&game->player, attackPos);
 
+    // Zone d'attaque élargie : position principale + positions adjacentes
+    int attackZone[3][2];
+    attackZone[0][0] = attackPos[0];
+    attackZone[0][1] = attackPos[1];
+
+    // Ajouter les cases adjacentes selon la direction (arc de cercle)
+    switch (game->player.direction) {
+        case LINK_DIR_UP:
+        case LINK_DIR_DOWN:
+            attackZone[1][0] = attackPos[0] - 1;
+            attackZone[1][1] = attackPos[1];
+            attackZone[2][0] = attackPos[0] + 1;
+            attackZone[2][1] = attackPos[1];
+            break;
+        case LINK_DIR_LEFT:
+        case LINK_DIR_RIGHT:
+            attackZone[1][0] = attackPos[0];
+            attackZone[1][1] = attackPos[1] - 1;
+            attackZone[2][0] = attackPos[0];
+            attackZone[2][1] = attackPos[1] + 1;
+            break;
+    }
+
     for (int i = 0; i < game->enemyCount; i++) {
         if (!game->enemies[i].isActive) continue;
+        // Éviter de toucher plusieurs fois le même ennemi pendant une attaque
+        if (game->enemies[i].hitTimer > 0) continue;
 
-        if (Enemy_collidesWith(&game->enemies[i], attackPos)) {
-            if (Enemy_takeDamage(&game->enemies[i], 1)) {
-                // Ennemi mort
-                game->stats.kills++;
-                game->stats.score += ENEMY_KILL_SCORE;
+        // Vérifier si l'ennemi est dans la zone d'attaque
+        for (int z = 0; z < 3; z++) {
+            if (Enemy_collidesWith(&game->enemies[i], attackZone[z])) {
+                if (Enemy_takeDamage(&game->enemies[i], 1)) {
+                    // Ennemi mort
+                    game->stats.kills++;
+                    game->stats.score += ENEMY_KILL_SCORE;
+                }
+                break;  // Un seul hit par ennemi par attaque
             }
         }
     }
@@ -191,29 +223,25 @@ static void handlePlayingInput(Game* game, InputAction input) {
 
         case INPUT_ACTION_MOVE_UP: {
             const int delta[2] = {0, -1};
-            Character_move(&game->player.base, delta);
-            game->player.direction = LINK_DIR_UP;
+            Link_move(&game->player, delta);
             break;
         }
 
         case INPUT_ACTION_MOVE_DOWN: {
             const int delta[2] = {0, 1};
-            Character_move(&game->player.base, delta);
-            game->player.direction = LINK_DIR_DOWN;
+            Link_move(&game->player, delta);
             break;
         }
 
         case INPUT_ACTION_MOVE_LEFT: {
             const int delta[2] = {-1, 0};
-            Character_move(&game->player.base, delta);
-            game->player.direction = LINK_DIR_LEFT;
+            Link_move(&game->player, delta);
             break;
         }
 
         case INPUT_ACTION_MOVE_RIGHT: {
             const int delta[2] = {1, 0};
-            Character_move(&game->player.base, delta);
-            game->player.direction = LINK_DIR_RIGHT;
+            Link_move(&game->player, delta);
             break;
         }
 
@@ -259,7 +287,7 @@ static void handleMenuAction(Game* game, MenuAction action) {
 }
 
 /**
- * @brief Dessine l'effet d'attaque de Link
+ * @brief Dessine l'effet d'attaque de Link avec la zone en arc
  */
 static void drawAttackEffect(const Game* game) {
     if (!Link_isAttacking(&game->player)) return;
@@ -267,24 +295,53 @@ static void drawAttackEffect(const Game* game) {
     int attackPos[2];
     Link_getAttackPosition(&game->player, attackPos);
 
-    // Convertir en coordonnées écran
-    int screenX = (attackPos[0] - game->map.currentRoom[0] * GRID_ROOM_WIDTH) * GRID_CELL_SIZE;
-    int screenY = (attackPos[1] - game->map.currentRoom[1] * GRID_ROOM_HEIGHT) * GRID_CELL_SIZE;
+    // Zone d'attaque élargie : position principale + positions adjacentes
+    int attackZone[3][2];
+    attackZone[0][0] = attackPos[0];
+    attackZone[0][1] = attackPos[1];
 
-    // Dessiner un rectangle rouge semi-transparent pour l'attaque
+    switch (game->player.direction) {
+        case LINK_DIR_UP:
+        case LINK_DIR_DOWN:
+            attackZone[1][0] = attackPos[0] - 1;
+            attackZone[1][1] = attackPos[1];
+            attackZone[2][0] = attackPos[0] + 1;
+            attackZone[2][1] = attackPos[1];
+            break;
+        case LINK_DIR_LEFT:
+        case LINK_DIR_RIGHT:
+            attackZone[1][0] = attackPos[0];
+            attackZone[1][1] = attackPos[1] - 1;
+            attackZone[2][0] = attackPos[0];
+            attackZone[2][1] = attackPos[1] + 1;
+            break;
+    }
+
     SDL_SetRenderDrawBlendMode(game->render.renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(game->render.renderer, 255, 200, 0, 150);
-    SDL_Rect attackRect = {screenX + 5, screenY + 5, GRID_CELL_SIZE - 10, GRID_CELL_SIZE - 10};
-    SDL_RenderFillRect(game->render.renderer, &attackRect);
+
+    // Dessiner la zone d'attaque avec un dégradé (centre plus lumineux)
+    for (int z = 0; z < 3; z++) {
+        int screenX = (attackZone[z][0] - game->map.currentRoom[0] * GRID_ROOM_WIDTH) * GRID_CELL_SIZE;
+        int screenY = (attackZone[z][1] - game->map.currentRoom[1] * GRID_ROOM_HEIGHT) * GRID_CELL_SIZE;
+
+        // Centre plus lumineux, côtés plus sombres
+        int alpha = (z == 0) ? 180 : 100;
+        SDL_SetRenderDrawColor(game->render.renderer, 255, 220, 50, alpha);
+        SDL_Rect attackRect = {screenX + 3, screenY + 3, GRID_CELL_SIZE - 6, GRID_CELL_SIZE - 6};
+        SDL_RenderFillRect(game->render.renderer, &attackRect);
+
+        // Bordure
+        SDL_SetRenderDrawColor(game->render.renderer, 255, 150, 0, alpha);
+        SDL_RenderDrawRect(game->render.renderer, &attackRect);
+    }
 }
 
 /**
- * @brief Dessine les ennemis actifs avec effet de clignotement si touchés
+ * @brief Dessine les ennemis actifs
  */
 static void drawEnemies(const Game* game) {
     for (int i = 0; i < game->enemyCount; i++) {
-        if (!game->enemies[i].isActive) continue;
-        Character_draw(&game->enemies[i].base, game->render.renderer);
+        Enemy_draw(&game->enemies[i], game->render.renderer);
     }
 }
 
@@ -292,11 +349,7 @@ static void drawEnemies(const Game* game) {
  * @brief Dessine Link avec effet de clignotement si invincible
  */
 static void drawPlayer(const Game* game) {
-    // Effet de clignotement pendant l'invincibilité
-    if (game->player.isInvincible && (game->player.invincibilityTimer / 5) % 2 == 0) {
-        return; // Ne pas dessiner (clignotement)
-    }
-    Character_draw(&game->player.base, game->render.renderer);
+    Link_draw(&game->player, game->render.renderer);
 }
 
 //==============================================================================
@@ -462,10 +515,10 @@ void Game_update(Game* game) {
         spawnEnemiesForRoom(game);
     }
 
-    // Mise à jour des ennemis
+    // Mise à jour des ennemis (avec gestion des collisions entre eux)
     for (int i = 0; i < game->enemyCount; i++) {
         if (game->enemies[i].isActive) {
-            Enemy_update(&game->enemies[i], game->player.base.pos);
+            Enemy_update(&game->enemies[i], game->player.base.pos, game->enemies, game->enemyCount, i);
         }
     }
 
