@@ -4,6 +4,7 @@
  */
 
 #include "enemy.h"
+#include "map.h"
 #include "render.h"
 #include "utils.h"
 #include <stdlib.h>
@@ -194,9 +195,9 @@ void Enemy_draw(const Enemy* enemy, SDL_Renderer* renderer) {
     SDL_Texture* texture = Animation_getCurrentTexture(&enemy->animation, &enemy->sprites);
     if (!texture) return;
 
-    // Convertir en coordonnées écran
+    // Convertir en coordonnées écran via la caméra
     int screenPos[2];
-    worldToScreen(enemy->base.pos, screenPos, enemy->base.map->currentRoom);
+    Camera_worldToScreen(&enemy->base.map->camera, enemy->base.pos, screenPos);
 
     // Dessiner avec teinte rouge si récemment touché
     if (enemy->hitTimer > 0) {

@@ -4,6 +4,7 @@
  */
 
 #include "link.h"
+#include "map.h"
 #include "render.h"
 #include "utils.h"
 
@@ -121,7 +122,7 @@ void Link_draw(const Link* link, SDL_Renderer* renderer) {
     if (!tex) return;
 
     int screen[2];
-    worldToScreen(link->base.pos, screen, link->base.map->currentRoom);
+    Camera_worldToScreen(&link->base.map->camera, link->base.pos, screen);
     renderTexture(tex, renderer, screen[0], screen[1], GRID_CELL_SIZE, GRID_CELL_SIZE);
 }
 
