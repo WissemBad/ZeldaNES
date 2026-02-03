@@ -7,6 +7,7 @@
 #define NUPRC_ENEMY_H
 
 #include "character.h"
+#include "animation.h"
 
 //==============================================================================
 // CONSTANTES
@@ -41,12 +42,15 @@ typedef enum {
 
 /** Structure d'un ennemi (hérite de Character) */
 typedef struct {
-    Character base;         /**< Données de base du personnage */
-    EnemyType enemyType;    /**< Type d'ennemi */
-    EnemyAI   ai;           /**< Stratégie de déplacement */
-    int       moveTimer;    /**< Compteur de frames pour le déplacement */
-    int       targetPos[2]; /**< Position cible (pour l'IA) */
-    bool      isActive;     /**< true si l'ennemi est actif */
+    Character       base;           /**< Données de base du personnage */
+    EnemyType       enemyType;      /**< Type d'ennemi */
+    EnemyAI         ai;             /**< Stratégie de déplacement */
+    int             moveTimer;      /**< Compteur de frames pour le déplacement */
+    int             targetPos[2];   /**< Position cible (pour l'IA) */
+    bool            isActive;       /**< true si l'ennemi est actif */
+    int             hitTimer;       /**< Timer de clignotement après un hit */
+    SpriteSet       sprites;        /**< Ensemble des sprites animés */
+    AnimationState  animation;      /**< État de l'animation */
 } Enemy;
 
 //==============================================================================
@@ -56,14 +60,20 @@ typedef struct {
 /** Initialise un ennemi à une position donnée */
 void Enemy_init(Enemy* enemy, EnemyType type, EnemyAI ai, Map* map, const int initialPos[2]);
 
-/** Met à jour l'état de l'ennemi (IA, déplacement) */
-void Enemy_update(Enemy* enemy, const int playerPos[2]);
+/** Met à jour l'état de l'ennemi avec gestion des collisions entre ennemis */
+void Enemy_update(Enemy* enemy, const int playerPos[2], const Enemy* allEnemies, int enemyCount, int selfIndex);
 
 /** Vérifie si l'ennemi est en collision avec une position */
 bool Enemy_collidesWith(const Enemy* enemy, const int pos[2]);
 
+/** Vérifie si une position est occupée par un autre ennemi */
+bool Enemy_isPositionOccupied(const int pos[2], const Enemy* allEnemies, int enemyCount, int excludeIndex);
+
 /** Inflige des dégâts à l'ennemi, retourne true si l'ennemi est mort */
 bool Enemy_takeDamage(Enemy* enemy, int damage);
+
+/** Dessine l'ennemi avec l'animation appropriée */
+void Enemy_draw(const Enemy* enemy, SDL_Renderer* renderer);
 
 /** Libère les ressources allouées pour un ennemi */
 void Enemy_destroy(Enemy* enemy);

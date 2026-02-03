@@ -28,8 +28,9 @@
 /** Marges et positions du HUD */
 #define HUD_MARGIN_LEFT         10
 #define HUD_MARGIN_TOP          10
-#define HUD_COLUMN_2_X          200
-#define HUD_COLUMN_3_X          450
+#define HUD_COLUMN_2_X          180
+#define HUD_COLUMN_3_X          360
+#define HUD_CONTROLS_X          550
 
 /** Couleurs du HUD (RGB) */
 #define HUD_BG_COLOR_R          40

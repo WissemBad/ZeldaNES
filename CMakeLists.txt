@@ -27,6 +27,7 @@ add_executable(NUPRC
         src/utils.c
         src/hud.c
         src/menu.c
+        src/animation.c
 )
 
 target_include_directories(NUPRC PRIVATE
