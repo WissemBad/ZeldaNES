@@ -26,6 +26,7 @@ add_executable(NUPRC
         src/iomanager.c
         src/utils.c
         src/hud.c
+        src/menu.c
 )
 
 target_include_directories(NUPRC PRIVATE
