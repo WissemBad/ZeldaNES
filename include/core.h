@@ -71,4 +71,12 @@ typedef struct {
     int moves;
 } PlayerStats;
 
+/* Caméra pour le mode open world */
+typedef struct {
+    int x;
+    int y;
+    int targetX;
+    int targetY;
+} Camera;
+
 #endif
