@@ -93,8 +93,14 @@ static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
     SDL_SetRenderDrawColor(renderer, MENU_BG_R, MENU_BG_G, MENU_BG_B, MENU_BG_A);
     SDL_RenderClear(renderer);
 
+    // Effet de lignes décoratives
+    SDL_SetRenderDrawColor(renderer, 40, 40, 50, 255);
+    for (int i = 0; i < WINDOW_HEIGHT; i += 4) {
+        SDL_RenderDrawLine(renderer, 0, i, WINDOW_WIDTH, i);
+    }
+
     // Bordure décorative selon le type de menu
-    SDL_Color borderColor;
+    SDL_Color borderColor = {100, 150, 255, 255};  // Défaut: bleu
     switch (type) {
         case MENU_TYPE_MAIN:
             borderColor = (SDL_Color){100, 150, 255, 255};
@@ -108,6 +114,20 @@ static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
     }
 
     SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+
+    // Lignes décoratives horizontales
+    SDL_RenderDrawLine(renderer, 50, 50, WINDOW_WIDTH - 50, 50);
+    SDL_RenderDrawLine(renderer, 50, WINDOW_HEIGHT - 50, WINDOW_WIDTH - 50, WINDOW_HEIGHT - 50);
+
+    // Petits carrés aux coins
+    SDL_Rect cornerTL = {45, 45, 10, 10};
+    SDL_Rect cornerTR = {WINDOW_WIDTH - 55, 45, 10, 10};
+    SDL_Rect cornerBL = {45, WINDOW_HEIGHT - 55, 10, 10};
+    SDL_Rect cornerBR = {WINDOW_WIDTH - 55, WINDOW_HEIGHT - 55, 10, 10};
+    SDL_RenderFillRect(renderer, &cornerTL);
+    SDL_RenderFillRect(renderer, &cornerTR);
+    SDL_RenderFillRect(renderer, &cornerBL);
+    SDL_RenderFillRect(renderer, &cornerBR);
 }
 
 //==============================================================================
