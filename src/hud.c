@@ -98,16 +98,12 @@ void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
     snprintf(buffer, sizeof(buffer), "Temps : %02d:%02d", seconds / 60, seconds % 60);
     printTextWithFont(HUD_COLUMN_2_X, hudY + HUD_MARGIN_TOP + lineSpacing, buffer, render->font, render->renderer);
 
-    // Colonne 3 - Salle actuelle
+    // Colonne 3 - Salle et Mouvements
     snprintf(buffer, sizeof(buffer), "Salle : [%d, %d]", currentRoom[0], currentRoom[1]);
     printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP, buffer, render->font, render->renderer);
 
-    // Afficher le message temporaire s'il existe
-    if (s_messageTimer > 0) {
-        printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP + lineSpacing,
-                         s_messageBuffer, render->font, render->renderer);
-        s_messageTimer--;
-    }
+    snprintf(buffer, sizeof(buffer), "Moves : %d", stats->moves);
+    printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP + lineSpacing, buffer, render->font, render->renderer);
 }
 
 void HUD_renderDebugInfo(const RenderState* render, int fps, int entityCount) {
