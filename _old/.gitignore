@@ -1,0 +1,21 @@
+# CMake build directories
+cmake-build-*/
+build/
+out/
+
+# C/C++ compilation artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+
+# CLion IDE
+.idea/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride

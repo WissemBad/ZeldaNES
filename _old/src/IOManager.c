@@ -90,7 +90,7 @@ void IO_clearRenderer(SDL_Renderer *renderer) {
     SDL_RenderClear(renderer);
 }
 
-Direction IO_inputDirection(void) {
+Direction inputDirection(void) {
     int direction = -1;
     SDL_Event event;
     int key;
