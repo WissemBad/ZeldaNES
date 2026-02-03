@@ -1,54 +1,51 @@
-#ifndef CHARACTER_H
-#define CHARACTER_H
-
-#include <SDL2/SDL.h>
-#include "settings.h"
-
 /**
- * @brief Données stockées pour représenter un personnage.
+ * @file character.h
+ * @brief Structure et fonctions de base pour tous les personnages
  */
-typedef struct characterStruct {
-    char* name;
-    int position[2];
-    int moveCount;
-    SDL_Texture* texture;
+
+#ifndef NUPRC_CHARACTER_H
+#define NUPRC_CHARACTER_H
+
+#include "core.h"
+#include "map.h"
+
+//==============================================================================
+// ÉNUMÉRATIONS
+//==============================================================================
+
+/** Type de personnage */
+typedef enum {
+    CHAR_HERO,
+    CHAR_ENEMY
+} CharacterType;
+
+//==============================================================================
+// STRUCTURES
+//==============================================================================
+
+/** Structure de base pour tous les personnages (joueur et ennemis) */
+typedef struct {
+    CharacterType type;         /**< Type du personnage */
+    int           pos[2];       /**< Position dans le monde [x, y] */
+    int           lives;        /**< Points de vie restants */
+    SDL_Texture*  texture;      /**< Sprite du personnage */
+    Map*          map;          /**< Référence vers la carte (pour collisions) */
 } Character;
 
-/**
- * @brief Crée un personnage à partir d'un nom et d'une texture.
- * @param name Nom assigné au personnage
- * @param texturePath Chemin relatif vers la texture SDL à charger
- * @param renderer Renderer SDL utilisé pour créer la texture
- * @return Le personnage initialisé avec sa texture
- */
-Character Character_init(char* name, char* texturePath, SDL_Renderer *renderer);
+//==============================================================================
+// FONCTIONS
+//==============================================================================
 
-/**
- * @brief Met à jour la position du personnage selon une direction.
- * @param character Personnage à déplacer
- * @param direction Direction dans laquelle se déplacer
- * @return Le personnage après sa mise à jour
- */
-Character Character_move(Character character, Direction direction);
+/** Initialise un personnage */
+void Character_init(Character* character, CharacterType type, int lives, Map* map);
 
-/**
- * @brief Affiche les données du personnage dans la console de débogage.
- * @deprecated Utiliser une interface graphique pour afficher les informations.
- * @param character Personnage à afficher
- */
-void Character_print(Character character);
+/** Déplace un personnage selon un vecteur de déplacement (vérifie les collisions) */
+void Character_move(Character* character, const int delta[2]);
 
-/**
- * @brief Dessine le personnage à sa position actuelle sur le renderer.
- * @param character Personnage à dessiner
- * @param renderer Renderer SDL utilisé pour le dessin
- */
-void Character_draw(Character character, SDL_Renderer *renderer);
+/** Affiche le personnage à l'écran (à la position correspondant à la salle actuelle) */
+void Character_draw(const Character* character, SDL_Renderer* renderer);
 
-/**
- * @brief Libère les ressources du personnage.
- * @param character Personnage à détruire
- */
-void Character_destroy(Character *character);
+/** Libère les ressources allouées pour un personnage */
+void Character_destroy(Character* character);
 
-#endif
+#endif // NUPRC_CHARACTER_H

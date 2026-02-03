@@ -127,6 +127,7 @@ void HUD_renderDebugInfo(const RenderState* render, int fps, int entityCount) {
 }
 
 void HUD_showMessage(const RenderState* render, const char* message, int duration) {
+    (void)render;  // Paramètre réservé pour usage futur
     if (!message) return;
 
     strncpy(s_messageBuffer, message, sizeof(s_messageBuffer) - 1);

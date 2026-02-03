@@ -1,82 +1,56 @@
-#ifndef GAME_H
-#define GAME_H
-
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-#include <stdbool.h>
-#include "character.h"
-#include "settings.h"
-
 /**
- * @brief Structure principale du jeu.
+ * @file game.h
+ * @brief Structure principale du jeu et fonctions du cycle de vie
  */
-typedef struct gameStruct {
-    Character player;
-    char grid[GRID_COLS][GRID_ROWS];
-    int endPosition[2];
-    bool isRunning;
-    bool hasWon;
+
+#ifndef NUPRC_GAME_H
+#define NUPRC_GAME_H
+
+#include "core.h"
+#include "map.h"
+#include "link.h"
+#include "enemy.h"
+
+//==============================================================================
+// STRUCTURES
+//==============================================================================
+
+/** Structure principale du jeu */
+typedef struct {
+    RenderState render;                 /**< État du système de rendu */
+    GameState   state;                  /**< État actuel du jeu */
+    PlayerStats stats;                  /**< Statistiques du joueur */
+    Map         map;                    /**< Carte du monde */
+    Link        player;                 /**< Joueur (Link) */
+    Enemy       enemies[GAME_MAX_ENEMIES]; /**< Tableau des ennemis */
+    int         enemyCount;             /**< Nombre d'ennemis actifs */
+    bool        running;                /**< true si le jeu tourne */
 } Game;
 
-/**
- * @brief Initialise la structure principale du jeu.
- * @param game Pointeur vers la structure Game à initialiser
- * @param renderer Renderer SDL utilisé pour charger les textures
- * @param playerName Nom du joueur
- */
-void Game_init(Game *game, SDL_Renderer *renderer, char* playerName);
+//==============================================================================
+// FONCTIONS - CYCLE DE VIE
+//==============================================================================
 
-/**
- * @brief Initialise la grille de jeu avec les positions du joueur et de l'arrivée.
- * @param grid Grille à initialiser
- * @param player Personnage du joueur
- * @param endPosition Position de l'arrivée
- */
-void Game_initGrid(char grid[GRID_COLS][GRID_ROWS], Character player, int endPosition[2]);
+/** Initialise le jeu et toutes ses ressources */
+void Game_init(Game* game);
 
-/**
- * @brief Vérifie si la partie est terminée (victoire ou défaite).
- * @param character Personnage à vérifier
- * @param endPosition Position de l'arrivée
- * @param hasWon Pointeur vers le booléen indiquant la victoire
- * @return true si la partie est finie, false sinon
- */
-bool Game_isEnd(Character character, int endPosition[2], bool *hasWon);
+/** Lance la boucle principale du jeu */
+void Game_run(Game* game);
 
-/**
- * @brief Vérifie si un déplacement ferait sortir le personnage du plateau.
- * @param character Personnage à vérifier
- * @param direction Direction du déplacement envisagé
- * @return true si le déplacement sort du plateau, false sinon
- */
-bool Game_isExceed(Character character, Direction direction);
+/** Libère toutes les ressources et ferme le jeu proprement */
+void Game_destroy(Game* game);
 
-/**
- * @brief Met à jour le jeu après un déplacement du joueur.
- * @param game Pointeur vers la structure Game
- * @param direction Direction du déplacement
- */
-void Game_update(Game *game, Direction direction);
+//==============================================================================
+// FONCTIONS - BOUCLE DE JEU
+//==============================================================================
 
-/**
- * @brief Dessine le jeu (grille + joueur).
- * @param game Pointeur vers la structure Game
- * @param renderer Renderer SDL
- */
-void Game_draw(Game *game, SDL_Renderer *renderer);
+/** Traite les entrées utilisateur (clavier) */
+void Game_handleInput(Game* game);
 
-/**
- * @brief Affiche l'écran de fin de partie et attend une action utilisateur.
- * @param game Pointeur vers la structure Game
- * @param renderer Renderer SDL
- * @param font Police utilisée pour l'affichage
- */
-void Game_end(Game *game, SDL_Renderer *renderer, TTF_Font *font);
+/** Met à jour l'état du jeu (logique, IA, transitions) */
+void Game_update(Game* game);
 
-/**
- * @brief Libère toutes les ressources allouées au jeu.
- * @param game Pointeur vers la structure Game
- */
-void Game_destroy(Game *game);
+/** Affiche tous les éléments du jeu à l'écran (carte, personnages, HUD) */
+void Game_render(Game* game);
 
-#endif
+#endif // NUPRC_GAME_H

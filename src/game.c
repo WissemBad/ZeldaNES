@@ -1,107 +1,160 @@
+/**
+ * @file game.c
+ * @brief Implémentation du cycle de vie et de la boucle principale du jeu
+ */
+
 #include "game.h"
-#include "grid.h"
-#include "character.h"
-#include "IOManager.h"
-#include <stdlib.h>
-#include <time.h>
+#include "render.h"
+#include "iomanager.h"
+#include "hud.h"
 
-void Game_initGrid(char grid[GRID_COLS][GRID_ROWS], Character player, int endPosition[2]) {
-    for (int i = 0; i < GRID_COLS; i++) {
-        for (int j = 0; j < GRID_ROWS; j++) {
-            grid[i][j] = CELL_CHAR_EMPTY;
+//==============================================================================
+// FONCTIONS PUBLIQUES - CYCLE DE VIE
+//==============================================================================
+
+void Game_init(Game* game) {
+    // --- État initial ---
+    game->state = STATE_PLAYING;
+    game->stats.score = GAME_INITIAL_SCORE;
+    game->stats.kills = 0;
+    game->stats.playtime = 0;
+    game->enemyCount = 0;
+    game->running = true;
+
+    // --- Initialisation SDL ---
+    initSDL();
+    game->render.window = createWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
+    game->render.renderer = createRenderer(game->render.window);
+    game->render.font = TTF_OpenFont(WINDOW_FONT_PATH, WINDOW_FONT_SIZE);
+
+    if (game->render.font == NULL) {
+        fprintf(stderr, "Erreur chargement police : %s\n", TTF_GetError());
+    }
+
+    // --- Initialisation de la carte ---
+    Map_init(&game->map, game->render.renderer);
+
+    // --- Configuration de la salle initiale ---
+    const int initialRoom[2] = GAME_INITIAL_ROOM;
+    game->map.currentRoom[0] = initialRoom[0];
+    game->map.currentRoom[1] = initialRoom[1];
+
+    // --- Initialisation du joueur ---
+    Link_init(&game->player, &game->map);
+    Room_getCenter(&game->map.rooms[initialRoom[1]][initialRoom[0]], game->player.base.pos);
+}
+
+void Game_run(Game* game) {
+    while (game->running) {
+        Game_handleInput(game);
+        Game_update(game);
+        Game_render(game);
+    }
+}
+
+void Game_destroy(Game* game) {
+    // --- Libération du joueur ---
+    Link_destroy(&game->player);
+
+    // --- Libération des ennemis ---
+    for (int i = 0; i < game->enemyCount; i++) {
+        Enemy_destroy(&game->enemies[i]);
+    }
+
+    // --- Libération de la carte ---
+    Map_destroy(&game->map);
+
+    // --- Libération des ressources SDL ---
+    if (game->render.font != NULL) {
+        TTF_CloseFont(game->render.font);
+    }
+    quitSDL(game->render.window, game->render.renderer);
+}
+
+//==============================================================================
+// FONCTIONS PUBLIQUES - BOUCLE DE JEU
+//==============================================================================
+
+void Game_handleInput(Game* game) {
+    const InputAction input = inputPoll();
+
+    switch (input) {
+        case INPUT_ACTION_QUIT:
+            game->running = false;
+            break;
+
+        case INPUT_ACTION_MOVE_UP: {
+            const int delta[2] = {0, -1};
+            Character_move(&game->player.base, delta);
+            game->player.direction = LINK_DIR_UP;
+            break;
         }
-    }
 
-    grid[player.position[0]][player.position[1]] = CELL_CHAR_PLAYER;
-    grid[endPosition[0]][endPosition[1]] = CELL_CHAR_END;
-}
-
-void Game_init(Game *game, SDL_Renderer *renderer, char* playerName) {
-    srand(time(NULL));
-
-    game->player = Character_init(playerName, NULL, renderer);
-    game->endPosition[0] = rand() % GRID_COLS;
-    game->endPosition[1] = rand() % GRID_ROWS;
-
-    Game_initGrid(game->grid, game->player, game->endPosition);
-
-    game->isRunning = true;
-    game->hasWon = false;
-}
-
-bool Game_isEnd(Character character, int endPosition[2], bool *hasWon) {
-    if (character.moveCount >= GAME_MAX_MOVES) {
-        *hasWon = false;
-        return true;
-    }
-
-    if (character.position[0] == endPosition[0] && character.position[1] == endPosition[1]) {
-        *hasWon = true;
-        return true;
-    }
-
-    return false;
-}
-
-bool Game_isExceed(Character character, Direction direction) {
-    if (direction == DIR_UP && character.position[1] == 0) return true;
-    if (direction == DIR_DOWN && character.position[1] == GRID_ROWS - 1) return true;
-    if (direction == DIR_LEFT && character.position[0] == 0) return true;
-    if (direction == DIR_RIGHT && character.position[0] == GRID_COLS - 1) return true;
-    return false;
-}
-
-void Game_update(Game *game, Direction direction) {
-    if (direction == -1 || Game_isExceed(game->player, direction)) {
-        return;
-    }
-
-    game->player = Character_move(game->player, direction);
-    Grid_update(game->grid, game->player, direction);
-
-    Game_isEnd(game->player, game->endPosition, &game->hasWon);
-    if (game->hasWon || game->player.moveCount >= GAME_MAX_MOVES) {
-        game->isRunning = false;
-    }
-}
-
-void Game_draw(Game *game, SDL_Renderer *renderer) {
-    Grid_draw(renderer, game->endPosition);
-    Character_draw(game->player, renderer);
-}
-
-void Game_end(Game *game, SDL_Renderer *renderer, TTF_Font *font) {
-    SDL_Color white = {255, 255, 255, 255};
-
-    if (game->hasWon) {
-        IO_printText(50, WINDOW_HEIGHT/2 - 90, "VICTOIRE", 400, 50, font, white, renderer);
-        IO_printText(80, WINDOW_HEIGHT/2, "Vous avez atteint l'arrivee.", 340, 30, font, white, renderer);
-        char movesText[50];
-        sprintf(movesText, "Nombre de deplacements : %d", game->player.moveCount);
-        IO_printText(100, WINDOW_HEIGHT/2 + 40, movesText, 300, 25, font, white, renderer);
-    } else {
-        IO_printText(80, WINDOW_HEIGHT/2 - 90, "DEFAITE", 340, 50, font, white, renderer);
-        IO_printText(60, WINDOW_HEIGHT/2, "Vous avez depasse le nombre", 380, 30, font, white, renderer);
-        IO_printText(80, WINDOW_HEIGHT/2 + 35, "maximum de deplacements.", 340, 30, font, white, renderer);
-    }
-
-    IO_printText(40, WINDOW_HEIGHT/2 + 120, "Appuyez sur une touche pour quitter.", 420, 25, font, white, renderer);
-    IO_updateDisplay(renderer);
-
-    bool wait = true;
-    SDL_Event event;
-    while (wait) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_KEYDOWN || event.type == SDL_QUIT) {
-                wait = false;
-            }
+        case INPUT_ACTION_MOVE_DOWN: {
+            const int delta[2] = {0, 1};
+            Character_move(&game->player.base, delta);
+            game->player.direction = LINK_DIR_DOWN;
+            break;
         }
+
+        case INPUT_ACTION_MOVE_LEFT: {
+            const int delta[2] = {-1, 0};
+            Character_move(&game->player.base, delta);
+            game->player.direction = LINK_DIR_LEFT;
+            break;
+        }
+
+        case INPUT_ACTION_MOVE_RIGHT: {
+            const int delta[2] = {1, 0};
+            Character_move(&game->player.base, delta);
+            game->player.direction = LINK_DIR_RIGHT;
+            break;
+        }
+
+        case INPUT_ACTION_ATTACK:
+            Link_attack(&game->player);
+            break;
+
+        default:
+            break;
     }
 }
 
-void Game_destroy(Game *game) {
-    if (game != NULL) {
-        Character_destroy(&game->player);
-        Grid_destroy();
+void Game_update(Game* game) {
+    // Mise à jour du joueur
+    Link_update(&game->player);
+
+    // Gestion des transitions de salles
+    Room_handleTransition(&game->map, game->player.base.pos);
+
+    // Mise à jour des ennemis
+    for (int i = 0; i < game->enemyCount; i++) {
+        Enemy_update(&game->enemies[i]);
     }
+
+    // Temps de jeu
+    game->stats.playtime++;
+}
+
+void Game_render(Game* game) {
+    // --- Effacement de l'écran ---
+    SDL_SetRenderDrawColor(game->render.renderer, 0, 0, 0, 255);
+    clearRenderer(game->render.renderer);
+
+    // --- Carte ---
+    Map_draw(&game->map, true);
+
+    // --- Ennemis ---
+    for (int i = 0; i < game->enemyCount; i++) {
+        Character_draw(&game->enemies[i].base, game->render.renderer);
+    }
+
+    // --- Joueur ---
+    Character_draw(&game->player.base, game->render.renderer);
+
+    // --- HUD ---
+    HUD_render(&game->render, &game->stats, game->player.base.lives, game->map.currentRoom);
+
+    // --- Affichage ---
+    updateDisplay(game->render.renderer);
 }

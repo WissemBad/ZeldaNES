@@ -1,65 +1,54 @@
+/**
+ * @file character.c
+ * @brief Implémentation des fonctions de base des personnages
+ */
+
 #include "character.h"
-#include "IOManager.h"
-#include <stdio.h>
+#include "render.h"
+#include "utils.h"
 
-Character Character_init(char* name, char* texturePath, SDL_Renderer *renderer) {
-    Character character;
-    character.name = name;
-    character.position[0] = 4;
-    character.position[1] = 4;
-    character.moveCount = 0;
+//==============================================================================
+// FONCTIONS PUBLIQUES
+//==============================================================================
 
-    if (texturePath != NULL) {
-        character.texture = IO_loadTexture(texturePath, renderer);
-    } else {
-        character.texture = IO_loadTexture(ASSET_TEXTURE_PLAYER_DEFAULT, renderer);
+void Character_init(Character* character, CharacterType type, int lives, Map* map) {
+    character->type = type;
+    character->lives = lives;
+    character->pos[0] = 0;
+    character->pos[1] = 0;
+    character->texture = NULL;
+    character->map = map;
+}
+
+void Character_move(Character* character, const int delta[2]) {
+    const int newPos[2] = {
+        character->pos[0] + delta[0],
+        character->pos[1] + delta[1]
+    };
+
+    if (Map_isBlocking(character->map, newPos)) {
+        return;
     }
 
-    return character;
+    character->pos[0] = newPos[0];
+    character->pos[1] = newPos[1];
 }
 
-Character Character_move(Character character, Direction direction) {
-    switch (direction) {
-        case DIR_RIGHT:
-            character.position[0] += 1;
-            character.moveCount++;
-            break;
-        case DIR_LEFT:
-            character.position[0] -= 1;
-            character.moveCount++;
-            break;
-        case DIR_UP:
-            character.position[1] -= 1;
-            character.moveCount++;
-            break;
-        case DIR_DOWN:
-            character.position[1] += 1;
-            character.moveCount++;
-            break;
-        default:
-            break;
+void Character_draw(const Character* character, SDL_Renderer* renderer) {
+    if (character->texture == NULL) {
+        return;
     }
-    return character;
+
+    int screenPos[2];
+    worldToScreen(character->pos, screenPos, character->map->currentRoom);
+    renderTexture(character->texture, renderer,
+                  screenPos[0], screenPos[1],
+                  GRID_CELL_SIZE, GRID_CELL_SIZE);
 }
 
-void Character_draw(Character character, SDL_Renderer *renderer) {
-    int pixelX = character.position[0] * GRID_CELL_SIZE;
-    int pixelY = character.position[1] * GRID_CELL_SIZE;
-    IO_renderTexture(character.texture, renderer, pixelX, pixelY, GRID_CELL_SIZE, GRID_CELL_SIZE);
-}
-
-void Character_print(Character character) {
-    printf("-- Informations du personnage --\n");
-    printf("Nom : %s\n", character.name);
-    printf("Position (x, y) : %d, %d\n", character.position[0], character.position[1]);
-    printf("Deplacements : %d\n", character.moveCount);
-    printf("--------------------------------\n");
-}
-
-void Character_destroy(Character *character) {
-    if (character != NULL && character->texture != NULL) {
+void Character_destroy(Character* character) {
+    if (character->texture != NULL) {
         SDL_DestroyTexture(character->texture);
         character->texture = NULL;
     }
 }
-
