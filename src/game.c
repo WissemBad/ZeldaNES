@@ -96,7 +96,6 @@ static void spawnEnemiesForRoom(Game* game) {
  * @brief Initialise les ressources du gameplay (carte, joueur, ennemis)
  */
 static void initGameplayResources(Game* game) {
-    // Seed pour le random
     srand((int)time(NULL));
 
     // Initialisation de la carte
@@ -143,19 +142,16 @@ static void checkEnemyCollisions(Game* game) {
  * L'attaque touche pendant toute sa durée active et a une zone d'effet en arc
  */
 static void handleAttack(Game* game) {
-    // L'attaque ne touche que pendant la phase active (début de l'attaque)
     if (!Link_isAttacking(&game->player)) return;
     if (game->player.attackCooldown < LINK_ATTACK_COOLDOWN - LINK_ATTACK_ACTIVE_TIME) return;
 
     int attackPos[2];
     Link_getAttackPosition(&game->player, attackPos);
 
-    // Zone d'attaque élargie : position principale + positions adjacentes
     int attackZone[3][2];
     attackZone[0][0] = attackPos[0];
     attackZone[0][1] = attackPos[1];
 
-    // Ajouter les cases adjacentes selon la direction (arc de cercle)
     switch (game->player.direction) {
         case LINK_DIR_UP:
         case LINK_DIR_DOWN:
@@ -175,18 +171,15 @@ static void handleAttack(Game* game) {
 
     for (int i = 0; i < game->enemyCount; i++) {
         if (!game->enemies[i].isActive) continue;
-        // Éviter de toucher plusieurs fois le même ennemi pendant une attaque
         if (game->enemies[i].hitTimer > 0) continue;
 
-        // Vérifier si l'ennemi est dans la zone d'attaque
         for (int z = 0; z < 3; z++) {
             if (Enemy_collidesWith(&game->enemies[i], attackZone[z])) {
                 if (Enemy_takeDamage(&game->enemies[i], 1)) {
-                    // Ennemi mort
                     game->stats.kills++;
                     game->stats.score += ENEMY_KILL_SCORE;
                 }
-                break;  // Un seul hit par ennemi par attaque
+                break;
             }
         }
     }
@@ -209,7 +202,6 @@ static int countActiveEnemies(const Game* game) {
  * @brief Gère les inputs pendant l'état PLAYING
  */
 static void handlePlayingInput(Game* game, InputAction input) {
-    // Sauvegarde de la position avant mouvement
     int oldPos[2] = {game->player.base.pos[0], game->player.base.pos[1]};
 
     switch (input) {
@@ -295,7 +287,6 @@ static void drawAttackEffect(const Game* game) {
     int attackPos[2];
     Link_getAttackPosition(&game->player, attackPos);
 
-    // Zone d'attaque élargie : position principale + positions adjacentes
     int attackZone[3][2];
     attackZone[0][0] = attackPos[0];
     attackZone[0][1] = attackPos[1];
@@ -324,13 +315,11 @@ static void drawAttackEffect(const Game* game) {
         int screenX = (attackZone[z][0] - game->map.currentRoom[0] * GRID_ROOM_WIDTH) * GRID_CELL_SIZE;
         int screenY = (attackZone[z][1] - game->map.currentRoom[1] * GRID_ROOM_HEIGHT) * GRID_CELL_SIZE;
 
-        // Centre plus lumineux, côtés plus sombres
         int alpha = (z == 0) ? 180 : 100;
         SDL_SetRenderDrawColor(game->render.renderer, 255, 220, 50, alpha);
         SDL_Rect attackRect = {screenX + 3, screenY + 3, GRID_CELL_SIZE - 6, GRID_CELL_SIZE - 6};
         SDL_RenderFillRect(game->render.renderer, &attackRect);
 
-        // Bordure
         SDL_SetRenderDrawColor(game->render.renderer, 255, 150, 0, alpha);
         SDL_RenderDrawRect(game->render.renderer, &attackRect);
     }
@@ -383,21 +372,17 @@ void Game_run(Game* game) {
         Game_handleInput(game);
         Game_update(game);
         Game_render(game);
-
-        // Petit délai pour limiter le CPU (environ 60 FPS)
         SDL_Delay(16);
     }
 }
 
 void Game_destroy(Game* game) {
-    // --- Libération du joueur ---
     if (game->previousState == STATE_PLAYING || game->previousState == STATE_PAUSED ||
         game->state == STATE_PLAYING || game->state == STATE_PAUSED || game->state == STATE_GAMEOVER) {
         Link_destroy(&game->player);
         Map_destroy(&game->map);
     }
 
-    // --- Libération des ennemis ---
     for (int i = 0; i < game->enemyCount; i++) {
         Enemy_destroy(&game->enemies[i]);
     }
@@ -572,7 +557,7 @@ void Game_render(Game* game) {
             clearRenderer(game->render.renderer);
 
             // --- Carte ---
-            Map_draw(&game->map, true);
+            Map_draw(&game->map, false);
 
             // --- Effet d'attaque ---
             drawAttackEffect(game);
