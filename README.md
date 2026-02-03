@@ -1,4 +1,4 @@
-# ME_NUPRC - Jeu de Déplacement SDL2
+# NUPRC - Jeu de Déplacement SDL2
 
 ## 📋 Description
 
@@ -16,7 +16,7 @@ Jeu simple développé en C avec SDL2 où le joueur doit atteindre une case d'ar
 ### Structure du Projet
 
 ```
-ME_NUPRC/
+NUPRC/
 ├── include/              # Fichiers headers (.h)
 │   ├── character.h       # Gestion du personnage
 │   ├── game.h           # Logique principale du jeu
@@ -27,7 +27,7 @@ ME_NUPRC/
 │   ├── character.c
 │   ├── game.c
 │   ├── grid.c
-│   ├── IOManager.c
+│   ├── render.c
 │   └── main.c
 ├── assets/              # Ressources graphiques
 │   ├── fonts/
@@ -61,7 +61,7 @@ Gestion de la grille de jeu :
 - `Grid_draw()` : Affichage de la grille et de l'arrivée
 - `Grid_destroy()` : Libération des textures
 
-#### IOManager (IOManager.c/h)
+#### IOManager (render.c/h)
 Gestion des entrées/sorties SDL :
 - Initialisation SDL et TTF
 - Création fenêtre/renderer
@@ -87,12 +87,12 @@ brew install sdl2 sdl2_ttf cmake
 ```bash
 cd cmake-build-debug
 cmake ..
-cmake --build . --target ME_NUPRC
+cmake --build . --target NUPRC
 ```
 
 ### Exécution
 ```bash
-./cmake-build-debug/ME_NUPRC
+./cmake-build-debug/NUPRC
 ```
 
 ## 📝 Conventions de Code
@@ -148,7 +148,7 @@ Développé par Wissem
 
 ## 📄 Licence
 
-Projet éducatif - ME_NUPRC
+Projet éducatif - NUPRC
 
 ---
 
