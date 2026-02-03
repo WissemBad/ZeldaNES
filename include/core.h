@@ -92,6 +92,7 @@ typedef struct {
     int score;
     int kills;
     int playtime;
+    int moves;          /**< Nombre de déplacements effectués */
 } PlayerStats;
 
 #endif // NUPRC_CORE_H
