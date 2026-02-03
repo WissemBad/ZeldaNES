@@ -1,34 +1,17 @@
 /**
  * @file enemy.c
- * @brief Implémentation de la gestion des ennemis
+ * @brief Gestion des ennemis
  */
 
 #include "enemy.h"
 #include "render.h"
 #include "utils.h"
-
 #include <stdlib.h>
 
-//==============================================================================
-// CONSTANTES PRIVÉES
-//==============================================================================
-
-/** Frames entre déplacements (ennemi basique) */
 #define ENEMY_BASIC_MOVE_INTERVAL   70
-
-/** Frames entre déplacements (ennemi rapide) */
 #define ENEMY_FAST_MOVE_INTERVAL    45
-
-/** Frames entre déplacements (ennemi tank) */
 #define ENEMY_TANK_MOVE_INTERVAL    100
 
-//==============================================================================
-// FONCTIONS PRIVÉES
-//==============================================================================
-
-/**
- * @brief Retourne l'intervalle de déplacement selon le type d'ennemi
- */
 static int getMoveInterval(EnemyType type) {
     switch (type) {
         case ENEMY_TYPE_FAST: return ENEMY_FAST_MOVE_INTERVAL;
@@ -37,9 +20,6 @@ static int getMoveInterval(EnemyType type) {
     }
 }
 
-/**
- * @brief Retourne le nombre de vies selon le type d'ennemi
- */
 static int getEnemyLives(EnemyType type) {
     switch (type) {
         case ENEMY_TYPE_TANK: return 2;

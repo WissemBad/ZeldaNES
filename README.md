@@ -1,155 +1,69 @@
-# NUPRC - Jeu de Déplacement SDL2
+# NUPRC - Jeu Zelda-like en C
 
-## 📋 Description
+## Description
 
-Jeu simple développé en C avec SDL2 où le joueur doit atteindre une case d'arrivée en un nombre limité de déplacements.
+Jeu d'action/aventure en 2D inspiré de Zelda, développé en C avec SDL2.
+Le joueur contrôle Link et doit éliminer les ennemis dans chaque salle.
 
-## 🎮 Gameplay
+## Contrôles
 
-- **Objectif** : Atteindre la case d'arrivée (marquée par une texture spéciale)
-- **Contrôles** : Touches fléchées (↑ ↓ ← →)
-- **Limite** : Maximum 20 déplacements
-- **Grille** : 10x10 cases de 50x50 pixels
+| Touche | Action |
+|--------|--------|
+| ↑ ↓ ← → | Déplacement |
+| F | Attaque |
+| P / Échap | Pause |
+| Entrée | Valider (menus) |
 
-## 🏗️ Architecture
+## Compilation
 
-### Structure du Projet
+```bash
+mkdir build && cd build
+cmake ..
+make
+./NUPRC
+```
+
+### Dépendances
+
+- SDL2
+- SDL2_ttf
+- SDL2_image
+- SDL2_mixer
+
+Sur macOS avec Homebrew :
+```bash
+brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
+```
+
+## Structure du projet
 
 ```
 NUPRC/
-├── include/              # Fichiers headers (.h)
-│   ├── character.h       # Gestion du personnage
-│   ├── game.h           # Logique principale du jeu
-│   ├── grid.h           # Gestion de la grille
-│   ├── IOManager.h      # Entrées/Sorties SDL
-│   └── settings.h       # Configuration et constantes
-├── src/                 # Fichiers source (.c)
-│   ├── character.c
-│   ├── game.c
-│   ├── grid.c
-│   ├── render.c
-│   └── main.c
-├── assets/              # Ressources graphiques
+├── include/          # Headers
+│   ├── core.h        # Constantes et types
+│   ├── game.h        # Boucle principale
+│   ├── map.h         # Gestion de la carte
+│   ├── link.h        # Personnage jouable
+│   ├── enemy.h       # Ennemis et IA
+│   ├── animation.h   # Système d'animation
+│   ├── menu.h        # Système de menus
+│   ├── hud.h         # Interface utilisateur
+│   ├── render.h      # Fonctions SDL
+│   ├── iomanager.h   # Gestion des entrées
+│   └── utils.h       # Utilitaires
+├── src/              # Sources
+├── assets/           # Ressources
 │   ├── fonts/
-│   │   └── DejaVuSans-Bold.ttf
-│   └── images/
-│       ├── perso.bmp
-│       └── arrivee.bmp
-└── cmake-build-debug/   # Fichiers de build
+│   ├── textures/
+│   └── meta/
+└── CMakeLists.txt
 ```
 
-### Modules
+## Fonctionnalités
 
-#### Character (character.c/h)
-Gestion du personnage joueur :
-- `Character_init()` : Création et initialisation
-- `Character_move()` : Déplacement selon une direction
-- `Character_draw()` : Affichage graphique
-- `Character_destroy()` : Libération des ressources
-
-#### Game (game.c/h)
-Logique principale du jeu :
-- `Game_init()` : Initialisation de la partie
-- `Game_update()` : Mise à jour de l'état du jeu
-- `Game_draw()` : Rendu graphique
-- `Game_end()` : Écran de fin
-- `Game_destroy()` : Nettoyage des ressources
-
-#### Grid (grid.c/h)
-Gestion de la grille de jeu :
-- `Grid_update()` : Mise à jour après déplacement
-- `Grid_draw()` : Affichage de la grille et de l'arrivée
-- `Grid_destroy()` : Libération des textures
-
-#### IOManager (render.c/h)
-Gestion des entrées/sorties SDL :
-- Initialisation SDL et TTF
-- Création fenêtre/renderer
-- Chargement de textures
-- Gestion du clavier
-- Affichage de texte
-- Nettoyage SDL
-
-## 🛠️ Compilation
-
-### Prérequis
-- **C Compiler** (gcc/clang)
-- **CMake** (≥ 3.10)
-- **SDL2** (bibliothèque graphique)
-- **SDL2_ttf** (gestion des polices)
-
-### Installation des dépendances (macOS)
-```bash
-brew install sdl2 sdl2_ttf cmake
-```
-
-### Compilation
-```bash
-cd cmake-build-debug
-cmake ..
-cmake --build . --target NUPRC
-```
-
-### Exécution
-```bash
-./cmake-build-debug/NUPRC
-```
-
-## 📝 Conventions de Code
-
-### Nommage des Fonctions
-Format : `Entity_method()`
-- `Character_init()`, `Character_move()`
-- `Game_update()`, `Game_draw()`
-- `Grid_update()`, `Grid_draw()`
-- `IO_createWindow()`, `IO_quit()`
-
-### Nommage des Variables
-Format : `camelCase`
-- `endPosition`, `isRunning`, `hasWon`
-- `renderer`, `window`, `character`
-
-### Documentation
-- **Headers (.h)** : Docstrings complètes (`/** @brief ... */`)
-- **Sources (.c)** : Pas de commentaires `//` (code auto-documenté)
-
-## 🎯 Règles du Jeu
-
-1. Le joueur démarre au centre de la grille (position 4,4)
-2. L'arrivée est placée aléatoirement sur la grille
-3. Le joueur dispose de **20 déplacements maximum**
-4. Les déplacements hors limites sont interdits
-
-### Conditions de Victoire
-- ✅ Atteindre la case d'arrivée
-
-### Conditions de Défaite
-- ❌ Dépasser 20 déplacements
-
-## 🔧 Gestion des Ressources
-
-Le jeu gère proprement toutes les ressources :
-1. **Textures** : Libérées via `Character_destroy()` et `Grid_destroy()`
-2. **Polices** : Fermées avec `TTF_CloseFont()`
-3. **Bibliothèque TTF** : Fermée avec `TTF_Quit()`
-4. **Renderer/Window** : Détruits via `IO_quit()`
-5. **SDL** : Fermée avec `SDL_Quit()`
-
-## 📊 Statistiques
-
-- **Lignes de code** : ~418 lignes (sans compter les headers)
-- **Fichiers source** : 5 fichiers .c
-- **Fichiers header** : 5 fichiers .h
-- **Warnings** : 0 erreurs critiques
-
-## 👨‍💻 Auteur
-
-Développé par Wissem
-
-## 📄 Licence
-
-Projet éducatif - NUPRC
-
----
-
-**Status** : ✅ Production Ready
+- Système de menus (principal, pause, game over)
+- 3 types d'ennemis (basique, rapide, tank)
+- 2 modes d'IA (aléatoire, poursuite)
+- Animations de sprites (marche, attaque)
+- Collision entre personnages
+- HUD avec statistiques

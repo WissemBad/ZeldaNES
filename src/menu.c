@@ -1,21 +1,13 @@
 /**
  * @file menu.c
- * @brief Implémentation des menus du jeu
+ * @brief Système de menus
  */
 
 #include "menu.h"
 #include "render.h"
 #include "iomanager.h"
-
 #include <string.h>
 
-//==============================================================================
-// FONCTIONS PRIVÉES
-//==============================================================================
-
-/**
- * @brief Ajoute une option au menu
- */
 static void addOption(Menu* menu, const char* label, MenuAction action, bool enabled) {
     if (menu->optionCount >= MENU_MAX_OPTIONS) return;
 
@@ -27,9 +19,6 @@ static void addOption(Menu* menu, const char* label, MenuAction action, bool ena
     menu->optionCount++;
 }
 
-/**
- * @brief Dessine un rectangle avec bordure arrondie simulée
- */
 static void drawStyledRect(SDL_Renderer* renderer, int x, int y, int w, int h,
                            SDL_Color fillColor, SDL_Color borderColor, bool selected) {
     // Bordure extérieure (effet de sélection)
@@ -51,9 +40,6 @@ static void drawStyledRect(SDL_Renderer* renderer, int x, int y, int w, int h,
     }
 }
 
-/**
- * @brief Dessine le titre du jeu avec style
- */
 static void drawTitle(SDL_Renderer* renderer, TTF_Font* font, const char* title, int centerX, int y) {
     if (!font || !title) return;
 
@@ -85,9 +71,6 @@ static void drawTitle(SDL_Renderer* renderer, TTF_Font* font, const char* title,
     }
 }
 
-/**
- * @brief Dessine le fond du menu avec un effet de vignette
- */
 static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
     // Fond principal
     SDL_SetRenderDrawColor(renderer, MENU_BG_R, MENU_BG_G, MENU_BG_B, MENU_BG_A);
@@ -130,9 +113,6 @@ static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
     SDL_RenderFillRect(renderer, &cornerBR);
 }
 
-//==============================================================================
-// FONCTIONS PUBLIQUES
-//==============================================================================
 
 void Menu_initMain(Menu* menu) {
     memset(menu, 0, sizeof(Menu));

@@ -126,6 +126,12 @@ SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer)
             SDL_Surface* tileSurface = SDL_CreateRGBSurface(
                 0, MAP_TILE_SIZE, MAP_TILE_SIZE, 32, 0, 0, 0, 0
             );
+            if (tileSurface == NULL) {
+                fprintf(stderr, "Erreur SDL_CreateRGBSurface pour tuile (%d,%d) : %s\n", row, col, SDL_GetError());
+                textures[index] = NULL;
+                index++;
+                continue;
+            }
 
             // Calculer la position dans l'atlas (1px de marge entre les tuiles)
             SDL_Rect srcRect = {
@@ -135,9 +141,20 @@ SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer)
                 .h = MAP_TILE_SIZE
             };
 
-            SDL_BlitSurface(atlas, &srcRect, tileSurface, NULL);
-            textures[index] = SDL_CreateTextureFromSurface(renderer, tileSurface);
+            if (SDL_BlitSurface(atlas, &srcRect, tileSurface, NULL) < 0) {
+                fprintf(stderr, "Erreur SDL_BlitSurface pour tuile (%d,%d) : %s\n", row, col, SDL_GetError());
+                SDL_FreeSurface(tileSurface);
+                textures[index] = NULL;
+                index++;
+                continue;
+            }
+
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, tileSurface);
             SDL_FreeSurface(tileSurface);
+            if (tex == NULL) {
+                fprintf(stderr, "Erreur CreateTextureFromSurface pour tuile (%d,%d) : %s\n", row, col, SDL_GetError());
+            }
+            textures[index] = tex;
             index++;
         }
     }
@@ -248,24 +265,46 @@ void printTextWithFont(int x, int y, const char* text,
 //==============================================================================
 
 void playMusic(const char* filePath) {
-    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-        fprintf(stderr, "Erreur init SDL audio : %s\n", SDL_GetError());
-        return;
+    // Éviter une réinitialisation si SDL est déjà initialisé
+    if (SDL_WasInit(SDL_INIT_AUDIO) == 0) {
+        if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
+            fprintf(stderr, "Erreur init SDL audio : %s\n", SDL_GetError());
+            return;
+        }
     }
 
     const int flags = MIX_INIT_MP3;
-    if (Mix_Init(flags) != flags) {
+    if ((Mix_Init(flags) & flags) != flags) {
         fprintf(stderr, "Erreur init SDL_mixer : %s\n", Mix_GetError());
         return;
     }
 
     if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640) < 0) {
         fprintf(stderr, "Erreur ouverture audio : %s\n", Mix_GetError());
+        Mix_Quit();
         return;
     }
 
     Mix_Music* music = Mix_LoadMUS(filePath);
-    if (music != NULL) {
-        Mix_PlayMusic(music, 1);
+    if (music == NULL) {
+        fprintf(stderr, "Erreur chargement musique (%s) : %s\n", filePath, Mix_GetError());
+        Mix_CloseAudio();
+        Mix_Quit();
+        return;
     }
+
+    if (Mix_PlayMusic(music, 1) == -1) {
+        fprintf(stderr, "Erreur lecture musique : %s\n", Mix_GetError());
+    }
+
+    // Attendre la fin de la lecture (non-bloquant dans le jeu réel; ici simple cleanup)
+    // Dans le moteur réel, gérer via une boucle ou callbacks.
+    while (Mix_PlayingMusic()) {
+        SDL_Delay(10);
+    }
+
+    Mix_HaltMusic();
+    Mix_FreeMusic(music);
+    Mix_CloseAudio();
+    Mix_Quit();
 }

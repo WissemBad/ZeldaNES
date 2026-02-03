@@ -8,11 +8,6 @@
 
 #include "core.h"
 
-//==============================================================================
-// ÉNUMÉRATIONS
-//==============================================================================
-
-/** Actions possibles du joueur */
 typedef enum {
     INPUT_ACTION_NONE = 0,
     INPUT_ACTION_QUIT,
@@ -28,11 +23,6 @@ typedef enum {
     INPUT_ACTION_INVENTORY_TOGGLE
 } InputAction;
 
-//==============================================================================
-// FONCTIONS
-//==============================================================================
-
-/** Lit et traite les événements d'entrée SDL, retourne l'action correspondante */
 InputAction inputPoll(void);
 
-#endif // NUPRC_IOMANAGER_H
+#endif

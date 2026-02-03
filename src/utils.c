@@ -1,13 +1,9 @@
 /**
  * @file utils.c
- * @brief Implémentation des fonctions utilitaires
+ * @brief Fonctions utilitaires
  */
 
 #include "utils.h"
-
-//==============================================================================
-// FONCTIONS - CONVERSION DE COORDONNÉES
-//==============================================================================
 
 void worldToScreen(const int worldPos[2], int screenPos[2], const int roomPos[2]) {
     screenPos[0] = (worldPos[0] - roomPos[0] * GRID_ROOM_WIDTH) * GRID_CELL_SIZE;
@@ -19,13 +15,9 @@ void screenToWorld(const int screenPos[2], int worldPos[2], const int roomPos[2]
     worldPos[1] = screenPos[1] / GRID_CELL_SIZE + roomPos[1] * GRID_ROOM_HEIGHT;
 }
 
-//==============================================================================
-// FONCTIONS - MATHÉMATIQUES
-//==============================================================================
-
 int manhattanDistance(const int pos1[2], const int pos2[2]) {
-    const int dx = pos1[0] > pos2[0] ? pos1[0] - pos2[0] : pos2[0] - pos1[0];
-    const int dy = pos1[1] > pos2[1] ? pos1[1] - pos2[1] : pos2[1] - pos1[1];
+    int dx = pos1[0] > pos2[0] ? pos1[0] - pos2[0] : pos2[0] - pos1[0];
+    int dy = pos1[1] > pos2[1] ? pos1[1] - pos2[1] : pos2[1] - pos1[1];
     return dx + dy;
 }
 
