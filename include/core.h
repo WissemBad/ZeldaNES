@@ -32,6 +32,7 @@
 #define GAME_INITIAL_LIVES  5
 #define GAME_INITIAL_SCORE  0
 #define GAME_INITIAL_ROOM   {7, 7}
+#define GAME_WIN_KILLS      25
 
 #define MOVEMENT_SPEED      0.15f
 
@@ -46,7 +47,8 @@ typedef enum {
     STATE_MENU,
     STATE_PLAYING,
     STATE_PAUSED,
-    STATE_GAMEOVER
+    STATE_GAMEOVER,
+    STATE_WIN
 } GameState;
 
 typedef struct {

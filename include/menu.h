@@ -26,7 +26,8 @@
 typedef enum {
     MENU_TYPE_MAIN,
     MENU_TYPE_PAUSE,
-    MENU_TYPE_GAMEOVER
+    MENU_TYPE_GAMEOVER,
+    MENU_TYPE_WIN
 } MenuType;
 
 typedef enum {
@@ -55,6 +56,7 @@ typedef struct {
 void Menu_initMain(Menu* menu);
 void Menu_initPause(Menu* menu);
 void Menu_initGameOver(Menu* menu, int finalScore);
+void Menu_initWin(Menu* menu, int finalScore, int killsTarget);
 MenuAction Menu_handleInput(Menu* menu);
 void Menu_render(const Menu* menu, const RenderState* render);
 void Menu_moveUp(Menu* menu);

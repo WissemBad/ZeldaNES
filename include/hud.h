@@ -32,11 +32,9 @@ typedef struct {
 
 void HUD_render(const RenderState* render, const PlayerStats* stats, int lives, const int currentRoom[2]);
 void HUD_initConfig(HUDConfig* config);
-void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
-                          int lives, const int currentRoom[2], const HUDConfig* config);
+void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats, int lives, const int currentRoom[2], const HUDConfig* config);
 void HUD_renderDebugInfo(const RenderState* render, int fps, int entityCount);
 void HUD_showMessage(const RenderState* render, const char* message, int duration);
-void HUD_renderHealthBar(const RenderState* render, int x, int y,
-                         int currentLives, int maxLives, int width, int height);
+void HUD_renderHealthBar(const RenderState* render, int x, int y, int currentLives, int maxLives, int width, int height);
 
 #endif

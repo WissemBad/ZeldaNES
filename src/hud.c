@@ -153,8 +153,11 @@ void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
     snprintf(buffer, sizeof(buffer), "Salle : [%d, %d]", currentRoom[0], currentRoom[1]);
     printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP, buffer, render->font, render->renderer);
 
-    snprintf(buffer, sizeof(buffer), "Moves : %d", stats->moves);
+    snprintf(buffer, sizeof(buffer), "Mouvements : %d", stats->moves);
     printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP + lineSpacing, buffer, render->font, render->renderer);
+
+    snprintf(buffer, sizeof(buffer), "Objectif : %d/%d", stats->kills, GAME_WIN_KILLS);
+    printTextWithFont(HUD_COLUMN_2_X, hudY + HUD_MARGIN_TOP + 2 * lineSpacing, buffer, render->font, render->renderer);
 
     drawControls(render->renderer, render->font, HUD_CONTROLS_X, hudY + HUD_MARGIN_TOP);
 }
@@ -165,10 +168,10 @@ void HUD_renderDebugInfo(const RenderState* render, int fps, int entityCount) {
     const int hudY = getHudYPosition();
     char buffer[64];
 
-    snprintf(buffer, sizeof(buffer), "FPS: %d", fps);
+    snprintf(buffer, sizeof(buffer), "FPS : %d", fps);
     printTextWithFont(WINDOW_WIDTH - 100, hudY + HUD_MARGIN_TOP, buffer, render->font, render->renderer);
 
-    snprintf(buffer, sizeof(buffer), "Entites: %d", entityCount);
+    snprintf(buffer, sizeof(buffer), "Entités : %d", entityCount);
     printTextWithFont(WINDOW_WIDTH - 100, hudY + HUD_MARGIN_TOP + HUD_LINE_SPACING,
                      buffer, render->font, render->renderer);
 }
