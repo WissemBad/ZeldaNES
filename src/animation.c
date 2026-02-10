@@ -1,13 +1,7 @@
-/**
- * @file animation.c
- * @brief Système d'animation des sprites
- */
-
 #include "animation.h"
 #include "render.h"
 #include <string.h>
 
-/* Chemins des sprites */
 static const char* LINK_WALK[4][2] = {
     {"assets/textures/characters/link0.bmp", "assets/textures/characters/link1.bmp"},
     {"assets/textures/characters/link2.bmp", "assets/textures/characters/link3.bmp"},

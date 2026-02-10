@@ -15,7 +15,6 @@ _old/
 
 # CLion IDE
 .idea/
-.
 
 # macOS system files
 .DS_Store
