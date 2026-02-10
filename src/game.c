@@ -3,6 +3,7 @@
 #include "iomanager.h"
 #include "hud.h"
 #include "audio.h"
+#include "assets.h"
 
 #include <stdlib.h>
 #include <time.h>
@@ -392,9 +393,14 @@ void Game_init(Game* game) {
     resetPlayerStats(game);
 
     initSDL();
+    if (!assets_init()) {
+        fprintf(stderr, "Impossible d'initialiser le resolver d'assets\n");
+        game->running = false;
+        return;
+    }
     game->render.window = createWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
     game->render.renderer = createRenderer(game->render.window);
-    game->render.font = TTF_OpenFont(WINDOW_FONT_PATH, WINDOW_FONT_SIZE);
+    game->render.font = TTF_OpenFont(asset_full(WINDOW_FONT_PATH), WINDOW_FONT_SIZE);
 
     if (game->render.font == NULL) {
         fprintf(stderr, "Erreur chargement police : %s\n", TTF_GetError());

@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "assets.h"
 
 #include <ctype.h>
 
@@ -63,16 +64,16 @@ static void copyValue(char* dst, size_t dstSize, const char* value) {
 
 static void setDefaultConfig(AudioConfig* cfg) {
     memset(cfg, 0, sizeof(*cfg));
-    copyValue(cfg->musicMenu, sizeof(cfg->musicMenu), "assets/sounds/music/menu.ogg");
-    copyValue(cfg->musicGameplay, sizeof(cfg->musicGameplay), "assets/sounds/music/gameplay.ogg");
-    copyValue(cfg->musicGameOver, sizeof(cfg->musicGameOver), "assets/sounds/music/gameover.ogg");
-    copyValue(cfg->sfxEnemyKilled, sizeof(cfg->sfxEnemyKilled), "assets/sounds/sfx/enemy_killed.wav");
-    copyValue(cfg->sfxWalk, sizeof(cfg->sfxWalk), "assets/sounds/sfx/walk.wav");
-    copyValue(cfg->sfxMenuClick, sizeof(cfg->sfxMenuClick), "assets/sounds/sfx/menu_click.wav");
-    copyValue(cfg->sfxMenuMove, sizeof(cfg->sfxMenuMove), "assets/sounds/sfx/menu_move.wav");
-    copyValue(cfg->sfxAttack, sizeof(cfg->sfxAttack), "assets/sounds/sfx/attack.wav");
-    copyValue(cfg->sfxPlayerHit, sizeof(cfg->sfxPlayerHit), "assets/sounds/sfx/player_hit.wav");
-    copyValue(cfg->sfxGameOver, sizeof(cfg->sfxGameOver), "assets/sounds/sfx/game_over.wav");
+    copyValue(cfg->musicMenu, sizeof(cfg->musicMenu), "sounds/music/menu.ogg");
+    copyValue(cfg->musicGameplay, sizeof(cfg->musicGameplay), "sounds/music/gameplay.ogg");
+    copyValue(cfg->musicGameOver, sizeof(cfg->musicGameOver), "sounds/music/gameover.ogg");
+    copyValue(cfg->sfxEnemyKilled, sizeof(cfg->sfxEnemyKilled), "sounds/sfx/enemy_killed.wav");
+    copyValue(cfg->sfxWalk, sizeof(cfg->sfxWalk), "sounds/sfx/walk.wav");
+    copyValue(cfg->sfxMenuClick, sizeof(cfg->sfxMenuClick), "sounds/sfx/menu_click.wav");
+    copyValue(cfg->sfxMenuMove, sizeof(cfg->sfxMenuMove), "sounds/sfx/menu_move.wav");
+    copyValue(cfg->sfxAttack, sizeof(cfg->sfxAttack), "sounds/sfx/attack.wav");
+    copyValue(cfg->sfxPlayerHit, sizeof(cfg->sfxPlayerHit), "sounds/sfx/player_hit.wav");
+    copyValue(cfg->sfxGameOver, sizeof(cfg->sfxGameOver), "sounds/sfx/game_over.wav");
     cfg->masterVolume = 128;
     cfg->musicVolume = 96;
     cfg->sfxVolume = 128;
@@ -97,9 +98,10 @@ static void applyConfigEntry(AudioConfig* cfg, const char* key, const char* valu
 }
 
 static void loadConfigFile(AudioConfig* cfg, const char* path) {
-    FILE* file = fopen(path, "r");
+    const char* resolvedPath = asset_full(path);
+    FILE* file = fopen(resolvedPath, "r");
     if (!file) {
-        fprintf(stderr, "Audio config introuvable: %s\n", path);
+        fprintf(stderr, "Audio config introuvable: %s\n", resolvedPath);
         return;
     }
 
@@ -124,18 +126,20 @@ static void loadConfigFile(AudioConfig* cfg, const char* path) {
 
 static Mix_Chunk* loadChunk(const char* path) {
     if (!path || path[0] == '\0') return NULL;
-    Mix_Chunk* chunk = Mix_LoadWAV(path);
+    const char* resolvedPath = asset_full(path);
+    Mix_Chunk* chunk = Mix_LoadWAV(resolvedPath);
     if (!chunk) {
-        fprintf(stderr, "SFX non charge: %s (%s)\n", path, Mix_GetError());
+        fprintf(stderr, "SFX non charge: %s (%s)\n", resolvedPath, Mix_GetError());
     }
     return chunk;
 }
 
 static Mix_Music* loadMusic(const char* path) {
     if (!path || path[0] == '\0') return NULL;
-    Mix_Music* music = Mix_LoadMUS(path);
+    const char* resolvedPath = asset_full(path);
+    Mix_Music* music = Mix_LoadMUS(resolvedPath);
     if (!music) {
-        fprintf(stderr, "Music non chargee: %s (%s)\n", path, Mix_GetError());
+        fprintf(stderr, "Music non chargee: %s (%s)\n", resolvedPath, Mix_GetError());
     }
     return music;
 }

@@ -3,24 +3,24 @@
 #include <string.h>
 
 static const char* LINK_WALK[4][2] = {
-    {"assets/textures/characters/link0.bmp", "assets/textures/characters/link1.bmp"},
-    {"assets/textures/characters/link2.bmp", "assets/textures/characters/link3.bmp"},
-    {"assets/textures/characters/link4.bmp", "assets/textures/characters/link5.bmp"},
-    {"assets/textures/characters/link6.bmp", "assets/textures/characters/link7.bmp"}
+    {"textures/characters/link0.bmp", "textures/characters/link1.bmp"},
+    {"textures/characters/link2.bmp", "textures/characters/link3.bmp"},
+    {"textures/characters/link4.bmp", "textures/characters/link5.bmp"},
+    {"textures/characters/link6.bmp", "textures/characters/link7.bmp"}
 };
 
 static const char* LINK_ATTACK[4] = {
-    "assets/textures/characters/linkSwordRight.bmp",
-    "assets/textures/characters/linkSwordUp.bmp",
-    "assets/textures/characters/linkSwordLeft.bmp",
-    "assets/textures/characters/linkSwordDown.bmp"
+    "textures/characters/linkSwordRight.bmp",
+    "textures/characters/linkSwordUp.bmp",
+    "textures/characters/linkSwordLeft.bmp",
+    "textures/characters/linkSwordDown.bmp"
 };
 
 static const char* ENEMY_WALK[4][2] = {
-    {"assets/textures/characters/enemy0.bmp", "assets/textures/characters/enemy1.bmp"},
-    {"assets/textures/characters/enemy2.bmp", "assets/textures/characters/enemy3.bmp"},
-    {"assets/textures/characters/enemy4.bmp", "assets/textures/characters/enemy5.bmp"},
-    {"assets/textures/characters/enemy6.bmp", "assets/textures/characters/enemy7.bmp"}
+    {"textures/characters/enemy0.bmp", "textures/characters/enemy1.bmp"},
+    {"textures/characters/enemy2.bmp", "textures/characters/enemy3.bmp"},
+    {"textures/characters/enemy4.bmp", "textures/characters/enemy5.bmp"},
+    {"textures/characters/enemy6.bmp", "textures/characters/enemy7.bmp"}
 };
 
 void Animation_init(AnimationState* anim) {
