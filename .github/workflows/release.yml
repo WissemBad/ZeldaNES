@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            package_name: NUPRC-linux-x64
+            shell: bash
+          - os: macos-latest
+            package_name: NUPRC-macos-x64
+            shell: bash
+          - os: windows-latest
+            package_name: NUPRC-windows-x64
+            shell: msys2 {0}
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            pkg-config \
+            libsdl2-dev \
+            libsdl2-ttf-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev
+
+      - name: Setup dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install cmake pkg-config sdl2 sdl2_ttf sdl2_image sdl2_mixer
+
+      - name: Setup dependencies (Windows/MSYS2)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-SDL2_ttf
+            mingw-w64-x86_64-SDL2_image
+            mingw-w64-x86_64-SDL2_mixer
+
+      - name: Build (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          cmake -S . -B build
+          cmake --build build --config Release
+
+      - name: Build (Windows/MSYS2)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G Ninja
+          cmake --build build
+
+      - name: Package (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p dist/${{ matrix.package_name }}
+          cp build/NUPRC dist/${{ matrix.package_name }}/
+          cp -R assets dist/${{ matrix.package_name }}/
+          cd dist
+          tar -czf ${{ matrix.package_name }}.tar.gz ${{ matrix.package_name }}
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist/${{ matrix.package_name }}
+          cp build/NUPRC.exe dist/${{ matrix.package_name }}/
+          cp -R assets dist/${{ matrix.package_name }}/
+          cp /mingw64/bin/SDL2.dll dist/${{ matrix.package_name }}/ || true
+          cp /mingw64/bin/SDL2_ttf.dll dist/${{ matrix.package_name }}/ || true
+          cp /mingw64/bin/SDL2_image.dll dist/${{ matrix.package_name }}/ || true
+          cp /mingw64/bin/SDL2_mixer.dll dist/${{ matrix.package_name }}/ || true
+          cp /mingw64/bin/libgcc_s_seh-1.dll dist/${{ matrix.package_name }}/ || true
+          cp /mingw64/bin/libstdc++-6.dll dist/${{ matrix.package_name }}/ || true
+          cp /mingw64/bin/libwinpthread-1.dll dist/${{ matrix.package_name }}/ || true
+          cd dist
+          zip -r ${{ matrix.package_name }}.zip ${{ matrix.package_name }}
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package_name }}
+          path: |
+            dist/${{ matrix.package_name }}.tar.gz
+            dist/${{ matrix.package_name }}.zip
+          if-no-files-found: error
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-and-package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
