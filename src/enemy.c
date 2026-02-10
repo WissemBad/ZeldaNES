@@ -32,8 +32,11 @@ static int getEnemyLives(EnemyType type) {
  * @brief Calcule le meilleur déplacement vers la cible (poursuite)
  */
 static void calculateChaseMove(const Enemy* enemy, const int targetPos[2], int delta[2]) {
-    int dx = targetPos[0] - enemy->base.pos[0];
-    int dy = targetPos[1] - enemy->base.pos[1];
+    int currentPos[2];
+    Character_getGridPos(&enemy->base, currentPos);
+
+    int dx = targetPos[0] - currentPos[0];
+    int dy = targetPos[1] - currentPos[1];
 
     delta[0] = 0;
     delta[1] = 0;
@@ -75,8 +78,8 @@ static AnimDirection deltaToAnimDir(const int delta[2]) {
 void Enemy_init(Enemy* enemy, EnemyType type, EnemyAI ai, Map* map, const int initialPos[2]) {
     Character_init(&enemy->base, CHAR_ENEMY, getEnemyLives(type), map);
 
-    enemy->base.pos[0] = initialPos[0];
-    enemy->base.pos[1] = initialPos[1];
+    enemy->base.posX = (float)initialPos[0];
+    enemy->base.posY = (float)initialPos[1];
     enemy->enemyType = type;
     enemy->ai = ai;
     enemy->moveTimer = 0;
@@ -125,10 +128,14 @@ void Enemy_update(Enemy* enemy, const int playerPos[2], const Enemy* allEnemies,
             break;
     }
 
+    // Obtenir la position actuelle
+    int currentPos[2];
+    Character_getGridPos(&enemy->base, currentPos);
+
     // Calculer la nouvelle position
     int newPos[2] = {
-        enemy->base.pos[0] + delta[0],
-        enemy->base.pos[1] + delta[1]
+        currentPos[0] + delta[0],
+        currentPos[1] + delta[1]
     };
 
     // Vérifier si la position est occupée par un autre ennemi
@@ -140,13 +147,16 @@ void Enemy_update(Enemy* enemy, const int playerPos[2], const Enemy* allEnemies,
     }
 
     // Sauvegarder l'ancienne position
-    int oldPos[2] = {enemy->base.pos[0], enemy->base.pos[1]};
+    int oldPos[2];
+    Character_getGridPos(&enemy->base, oldPos);
 
     // Tenter de se déplacer (vérifie aussi les murs)
     Character_move(&enemy->base, delta);
 
     // Mettre à jour l'animation si on a bougé
-    if (oldPos[0] != enemy->base.pos[0] || oldPos[1] != enemy->base.pos[1]) {
+    int newPosCheck[2];
+    Character_getGridPos(&enemy->base, newPosCheck);
+    if (oldPos[0] != newPosCheck[0] || oldPos[1] != newPosCheck[1]) {
         AnimDirection animDir = deltaToAnimDir(delta);
         Animation_startWalk(&enemy->animation, animDir);
     }
@@ -157,7 +167,10 @@ bool Enemy_isPositionOccupied(const int pos[2], const Enemy* allEnemies, int ene
         if (i == excludeIndex) continue;
         if (!allEnemies[i].isActive) continue;
 
-        if (allEnemies[i].base.pos[0] == pos[0] && allEnemies[i].base.pos[1] == pos[1]) {
+        int enemyPos[2];
+        Character_getGridPos(&allEnemies[i].base, enemyPos);
+
+        if (enemyPos[0] == pos[0] && enemyPos[1] == pos[1]) {
             return true;
         }
     }
@@ -166,7 +179,11 @@ bool Enemy_isPositionOccupied(const int pos[2], const Enemy* allEnemies, int ene
 
 bool Enemy_collidesWith(const Enemy* enemy, const int pos[2]) {
     if (!enemy->isActive) return false;
-    return (enemy->base.pos[0] == pos[0] && enemy->base.pos[1] == pos[1]);
+
+    int enemyPos[2];
+    Character_getGridPos(&enemy->base, enemyPos);
+
+    return (enemyPos[0] == pos[0] && enemyPos[1] == pos[1]);
 }
 
 bool Enemy_takeDamage(Enemy* enemy, int damage) {
@@ -196,8 +213,11 @@ void Enemy_draw(const Enemy* enemy, SDL_Renderer* renderer) {
     if (!texture) return;
 
     // Convertir en coordonnées écran via la caméra
+    int gridPos[2];
+    Character_getGridPos(&enemy->base, gridPos);
+
     int screenPos[2];
-    Camera_worldToScreen(&enemy->base.map->camera, enemy->base.pos, screenPos);
+    Camera_worldToScreen(&enemy->base.map->camera, gridPos, screenPos);
 
     // Dessiner avec teinte rouge si récemment touché
     if (enemy->hitTimer > 0) {

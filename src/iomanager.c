@@ -41,3 +41,42 @@ InputAction inputPoll(void) {
     return INPUT_ACTION_NONE;
 }
 
+void inputPollContinuous(InputState* state, bool* quit, bool* pause) {
+    if (!state || !quit || !pause) return;
+
+    // Réinitialiser l'état
+    state->moveUp = false;
+    state->moveDown = false;
+    state->moveLeft = false;
+    state->moveRight = false;
+    state->attack = false;
+    state->interact = false;
+    *quit = false;
+    *pause = false;
+
+    // Traiter les événements
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            *quit = true;
+            return;
+        }
+        // Gérer les touches spéciales en événements (pause, etc.)
+        if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+            if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_p) {
+                *pause = true;
+            }
+        }
+    }
+
+    // Lire l'état du clavier pour les touches continues
+    const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+
+    state->moveUp = keyboardState[SDL_SCANCODE_UP] || keyboardState[SDL_SCANCODE_Z];
+    state->moveDown = keyboardState[SDL_SCANCODE_DOWN] || keyboardState[SDL_SCANCODE_S];
+    state->moveLeft = keyboardState[SDL_SCANCODE_LEFT] || keyboardState[SDL_SCANCODE_Q];
+    state->moveRight = keyboardState[SDL_SCANCODE_RIGHT] || keyboardState[SDL_SCANCODE_D];
+    state->attack = keyboardState[SDL_SCANCODE_F];
+    state->interact = keyboardState[SDL_SCANCODE_E];
+}
+

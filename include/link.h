@@ -39,6 +39,7 @@ void Link_takeDamage(Link* link, int damage);
 void Link_getAttackPosition(const Link* link, int attackPos[2]);
 bool Link_isAttacking(const Link* link);
 void Link_move(Link* link, const int delta[2]);
+void Link_moveSmooth(Link* link, float deltaX, float deltaY);
 void Link_draw(const Link* link, SDL_Renderer* renderer);
 void Link_destroy(Link* link);
 
