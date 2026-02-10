@@ -216,17 +216,13 @@ void printText(const int x, const int y, const char* text,
     TTF_CloseFont(font);
 }
 
-void printTextWithFont(int x, int y, const char* text,
-                       TTF_Font* font, SDL_Renderer* renderer) {
-    if (font == NULL || text == NULL || renderer == NULL) {
-        return;
-    }
+void printTextWithFont(int x, int y, const char* text, TTF_Font* font, SDL_Renderer* renderer) {
+    if (font == NULL || text == NULL || renderer == NULL) return;
 
     SDL_Color color = {255, 255, 0, 255};
-    SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
-    if (surface == NULL) {
-        return;
-    }
+    SDL_Surface* surface = TTF_RenderText_Blended_Wrapped(font, text, color, 400);
+    if (surface == NULL) return;
+
 
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     if (texture != NULL) {
@@ -236,47 +232,4 @@ void printTextWithFont(int x, int y, const char* text,
     }
 
     SDL_FreeSurface(surface);
-}
-
-void playMusic(const char* filePath) {
-
-    if (SDL_WasInit(SDL_INIT_AUDIO) == 0) {
-        if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
-            fprintf(stderr, "Erreur init SDL audio : %s\n", SDL_GetError());
-            return;
-        }
-    }
-
-    const int flags = MIX_INIT_MP3;
-    if ((Mix_Init(flags) & flags) != flags) {
-        fprintf(stderr, "Erreur init SDL_mixer : %s\n", Mix_GetError());
-        return;
-    }
-
-    if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640) < 0) {
-        fprintf(stderr, "Erreur ouverture audio : %s\n", Mix_GetError());
-        Mix_Quit();
-        return;
-    }
-
-    Mix_Music* music = Mix_LoadMUS(filePath);
-    if (music == NULL) {
-        fprintf(stderr, "Erreur chargement musique (%s) : %s\n", filePath, Mix_GetError());
-        Mix_CloseAudio();
-        Mix_Quit();
-        return;
-    }
-
-    if (Mix_PlayMusic(music, 1) == -1) {
-        fprintf(stderr, "Erreur lecture musique : %s\n", Mix_GetError());
-    }
-
-    while (Mix_PlayingMusic()) {
-        SDL_Delay(10);
-    }
-
-    Mix_HaltMusic();
-    Mix_FreeMusic(music);
-    Mix_CloseAudio();
-    Mix_Quit();
 }

@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "render.h"
 #include "iomanager.h"
+#include "audio.h"
 #include <string.h>
 
 static void addOption(Menu* menu, const char* label, MenuAction action, bool enabled) {
@@ -172,10 +173,12 @@ MenuAction Menu_handleInput(Menu* menu) {
 
         case INPUT_ACTION_MOVE_UP:
             Menu_moveUp(menu);
+            Audio_playSfx(AUDIO_SFX_MENU_MOVE);
             break;
 
         case INPUT_ACTION_MOVE_DOWN:
             Menu_moveDown(menu);
+            Audio_playSfx(AUDIO_SFX_MENU_MOVE);
             break;
 
         case INPUT_ACTION_CONFIRM:
