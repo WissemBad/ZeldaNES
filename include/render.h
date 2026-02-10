@@ -20,6 +20,4 @@ void loadBlockingMap(const char* path, char map[GRID_WORLD_HEIGHT][GRID_WORLD_WI
 void printText(int x, int y, const char* text, int w, int h, SDL_Renderer* r);
 void printTextWithFont(int x, int y, const char* text, TTF_Font* font, SDL_Renderer* r);
 
-void playMusic(const char* path);
-
 #endif

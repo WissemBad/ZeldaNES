@@ -30,6 +30,22 @@ Exemple (macOS/Homebrew):
 brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
 ```
 
+## Audio
+
+Toute la config audio est dans:
+
+`assets/meta/audio/audio.cfg`
+
+Tu peux y régler:
+- les OST en boucle (`MUSIC_MENU`, `MUSIC_GAMEPLAY`, `MUSIC_GAMEOVER`)
+- les SFX par événement (`SFX_ENEMY_KILLED`, `SFX_WALK`, `SFX_MENU_CLICK`, etc.)
+- les volumes (`MASTER_VOLUME`, `MUSIC_VOLUME`, `SFX_VOLUME`)
+- la fréquence du son de pas (`WALK_INTERVAL_FRAMES`)
+
+Dépose tes fichiers audio dans:
+- `assets/sounds/music/`
+- `assets/sounds/sfx/`
+
 ## Crédits Assets
 
 - Tiles map + sprites Link: <https://github.com/asweigart/nes_zelda_map_data>

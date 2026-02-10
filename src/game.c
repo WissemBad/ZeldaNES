@@ -2,6 +2,7 @@
 #include "render.h"
 #include "iomanager.h"
 #include "hud.h"
+#include "audio.h"
 
 #include <stdlib.h>
 #include <time.h>
@@ -10,6 +11,10 @@
 #define ENEMY_SPAWN_MIN_DISTANCE    4
 #define ENEMY_SPAWN_MAX_DISTANCE    10
 #define ENEMY_DESPAWN_DISTANCE      20
+
+static float absf(float value) {
+    return value < 0.0f ? -value : value;
+}
 
 static void getRandomPositionNearPlayer(const Map* map, const int playerPos[2], int outPos[2]) {
     for (int attempts = 0; attempts < 100; attempts++) {
@@ -177,8 +182,12 @@ static void checkEnemyCollisions(Game* game) {
     for (int i = 0; i < game->enemyCount; i++) {
         if (!game->enemies[i].isActive) continue;
 
+        int livesBefore = game->player.base.lives;
         if (Enemy_collidesWith(&game->enemies[i], playerPos)) {
             Link_takeDamage(&game->player, 1);
+            if (game->player.base.lives < livesBefore) {
+                Audio_playSfx(AUDIO_SFX_PLAYER_HIT);
+            }
         }
     }
 }
@@ -220,6 +229,7 @@ static void handleAttack(Game* game) {
                 if (Enemy_takeDamage(&game->enemies[i], 1)) {
                     game->stats.kills++;
                     game->stats.score += ENEMY_KILL_SCORE;
+                    Audio_playSfx(AUDIO_SFX_ENEMY_KILLED);
                 }
                 break;
             }
@@ -239,11 +249,13 @@ static int countActiveEnemies(const Game* game) {
 
 static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pause) {
     if (quit) {
+        Audio_updateWalk(false);
         game->running = false;
         return;
     }
 
     if (pause) {
+        Audio_updateWalk(false);
         Game_pause(game);
         return;
     }
@@ -251,6 +263,8 @@ static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pa
     int gridPos[2];
     Character_getGridPos(&game->player.base, gridPos);
     int oldPos[2] = {gridPos[0], gridPos[1]};
+    float oldX = game->player.base.posX;
+    float oldY = game->player.base.posY;
 
     float deltaX = 0.0f;
     float deltaY = 0.0f;
@@ -272,8 +286,16 @@ static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pa
         Animation_stop(&game->player.animation);
     }
 
+    const bool isMoving = absf(game->player.base.posX - oldX) > 0.0001f ||
+                          absf(game->player.base.posY - oldY) > 0.0001f;
+    Audio_updateWalk(isMoving);
+
     if (input->attack) {
+        const bool wasAttacking = Link_isAttacking(&game->player);
         Link_attack(&game->player);
+        if (!wasAttacking && Link_isAttacking(&game->player)) {
+            Audio_playSfx(AUDIO_SFX_ATTACK);
+        }
     }
 
     Character_getGridPos(&game->player.base, gridPos);
@@ -286,14 +308,17 @@ static void handleMenuAction(Game* game, MenuAction action) {
     switch (action) {
         case MENU_ACTION_START:
         case MENU_ACTION_RESTART:
+            Audio_playSfx(AUDIO_SFX_MENU_CLICK);
             Game_startNewGame(game);
             break;
 
         case MENU_ACTION_RESUME:
+            Audio_playSfx(AUDIO_SFX_MENU_CLICK);
             Game_resume(game);
             break;
 
         case MENU_ACTION_QUIT:
+            Audio_playSfx(AUDIO_SFX_MENU_CLICK);
             if (game->state == STATE_MENU) {
                 game->running = false;
             } else {
@@ -375,6 +400,8 @@ void Game_init(Game* game) {
         fprintf(stderr, "Erreur chargement police : %s\n", TTF_GetError());
     }
 
+    Audio_init(ASSET_AUDIO_CONFIG);
+    Audio_setMusicTrack(AUDIO_MUSIC_MENU);
     Menu_initMain(&game->menu);
 }
 
@@ -401,6 +428,7 @@ void Game_destroy(Game* game) {
     if (game->render.font != NULL) {
         TTF_CloseFont(game->render.font);
     }
+    Audio_shutdown();
     quitSDL(game->render.window, game->render.renderer);
 }
 
@@ -411,17 +439,25 @@ void Game_setState(Game* game, GameState newState) {
     switch (newState) {
         case STATE_MENU:
             Menu_initMain(&game->menu);
+            Audio_updateWalk(false);
+            Audio_setMusicTrack(AUDIO_MUSIC_MENU);
             break;
 
         case STATE_PAUSED:
             Menu_initPause(&game->menu);
+            Audio_updateWalk(false);
+            Audio_setMusicTrack(AUDIO_MUSIC_MENU);
             break;
 
         case STATE_GAMEOVER:
             Menu_initGameOver(&game->menu, game->stats.score);
+            Audio_updateWalk(false);
+            Audio_playSfx(AUDIO_SFX_GAME_OVER);
+            Audio_setMusicTrack(AUDIO_MUSIC_GAMEOVER);
             break;
 
         case STATE_PLAYING:
+            Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
             break;
     }
 }
@@ -442,6 +478,7 @@ void Game_startNewGame(Game* game) {
 
     game->state = STATE_PLAYING;
     game->previousState = STATE_PLAYING;
+    Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
 }
 
 void Game_pause(Game* game) {
@@ -453,6 +490,7 @@ void Game_pause(Game* game) {
 void Game_resume(Game* game) {
     if (game->state == STATE_PAUSED) {
         game->state = STATE_PLAYING;
+        Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
     }
 }
 
