@@ -28,6 +28,7 @@ add_executable(NUPRC
         src/menu.c
         src/animation.c
         src/audio.c
+        src/assets.c
 )
 
 target_include_directories(NUPRC PRIVATE

@@ -1,4 +1,5 @@
 #include "render.h"
+#include "assets.h"
 
 void initSDL(void) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -66,9 +67,10 @@ void clearRenderer(SDL_Renderer* renderer) {
 }
 
 SDL_Texture* loadTexture(const char* filePath, SDL_Renderer* renderer) {
-    SDL_Surface* surface = SDL_LoadBMP(filePath);
+    const char* resolvedPath = asset_full(filePath);
+    SDL_Surface* surface = SDL_LoadBMP(resolvedPath);
     if (surface == NULL) {
-        fprintf(stderr, "Erreur LoadBMP (%s) : %s\n", filePath, SDL_GetError());
+        fprintf(stderr, "Erreur LoadBMP (%s) : %s\n", resolvedPath, SDL_GetError());
         return NULL;
     }
 
@@ -89,9 +91,10 @@ void renderTexture(SDL_Texture* texture, SDL_Renderer* renderer,
 }
 
 SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer) {
-    SDL_Surface* atlas = SDL_LoadBMP(tileFilename);
+    const char* resolvedPath = asset_full(tileFilename);
+    SDL_Surface* atlas = SDL_LoadBMP(resolvedPath);
     if (atlas == NULL) {
-        fprintf(stderr, "Erreur LoadBMP tiles : %s\n", SDL_GetError());
+        fprintf(stderr, "Erreur LoadBMP tiles (%s) : %s\n", resolvedPath, SDL_GetError());
         return NULL;
     }
 
@@ -146,9 +149,10 @@ SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer)
 }
 
 void loadWorldMap(const char* filePath, int worldMap[GRID_WORLD_HEIGHT][GRID_WORLD_WIDTH]) {
-    FILE* file = fopen(filePath, "r");
+    const char* resolvedPath = asset_full(filePath);
+    FILE* file = fopen(resolvedPath, "r");
     if (file == NULL) {
-        fprintf(stderr, "Erreur ouverture fichier : %s\n", filePath);
+        fprintf(stderr, "Erreur ouverture fichier : %s\n", resolvedPath);
         exit(EXIT_FAILURE);
     }
 
@@ -171,9 +175,10 @@ void loadWorldMap(const char* filePath, int worldMap[GRID_WORLD_HEIGHT][GRID_WOR
 }
 
 void loadBlockingMap(const char* filePath, char blockingMap[GRID_WORLD_HEIGHT][GRID_WORLD_WIDTH]) {
-    FILE* file = fopen(filePath, "r");
+    const char* resolvedPath = asset_full(filePath);
+    FILE* file = fopen(resolvedPath, "r");
     if (file == NULL) {
-        fprintf(stderr, "Erreur ouverture fichier : %s\n", filePath);
+        fprintf(stderr, "Erreur ouverture fichier : %s\n", resolvedPath);
         exit(EXIT_FAILURE);
     }
 
@@ -192,7 +197,7 @@ void loadBlockingMap(const char* filePath, char blockingMap[GRID_WORLD_HEIGHT][G
 
 void printText(const int x, const int y, const char* text,
                const int width, const int height, SDL_Renderer* renderer) {
-    TTF_Font* font = TTF_OpenFont(WINDOW_FONT_PATH, WINDOW_FONT_SIZE);
+    TTF_Font* font = TTF_OpenFont(asset_full(WINDOW_FONT_PATH), WINDOW_FONT_SIZE);
     if (font == NULL) {
         fprintf(stderr, "Erreur chargement police : %s\n", TTF_GetError());
         return;
