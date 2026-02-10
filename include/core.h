@@ -41,6 +41,9 @@
 #define GAME_INITIAL_SCORE  0
 #define GAME_INITIAL_ROOM   {7, 7}
 
+/* Configuration du mouvement fluide */
+#define MOVEMENT_SPEED      0.15f   // Vitesse de déplacement (en cases par frame)
+
 /* Chemins des assets */
 #define ASSET_TEXTURE_LINK      "assets/textures/characters/link2.bmp"
 #define ASSET_TEXTURE_ENEMY     "assets/textures/characters/enemy7.bmp"

@@ -48,9 +48,12 @@ static void spawnEnemiesNearPlayer(Game* game) {
     }
     game->enemyCount = 0;
 
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+
     for (int i = 0; i < ENEMIES_PER_ZONE && game->enemyCount < GAME_MAX_ENEMIES; i++) {
         int spawnPos[2];
-        getRandomPositionNearPlayer(&game->map, game->player.base.pos, spawnPos);
+        getRandomPositionNearPlayer(&game->map, playerPos, spawnPos);
 
         EnemyType type;
         EnemyAI ai;
@@ -96,7 +99,9 @@ static void spawnSingleEnemy(Game* game) {
     }
 
     int spawnPos[2];
-    getRandomPositionNearPlayer(&game->map, game->player.base.pos, spawnPos);
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+    getRandomPositionNearPlayer(&game->map, playerPos, spawnPos);
 
     EnemyType type;
     EnemyAI ai;
@@ -121,11 +126,17 @@ static void spawnSingleEnemy(Game* game) {
 }
 
 static void despawnDistantEnemies(Game* game) {
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+
     for (int i = 0; i < game->enemyCount; i++) {
         if (!game->enemies[i].isActive) continue;
 
-        int dx = game->enemies[i].base.pos[0] - game->player.base.pos[0];
-        int dy = game->enemies[i].base.pos[1] - game->player.base.pos[1];
+        int enemyPos[2];
+        Character_getGridPos(&game->enemies[i].base, enemyPos);
+
+        int dx = enemyPos[0] - playerPos[0];
+        int dy = enemyPos[1] - playerPos[1];
         int distance = (dx > 0 ? dx : -dx) + (dy > 0 ? dy : -dy);
 
         if (distance > ENEMY_DESPAWN_DISTANCE) {
@@ -144,9 +155,13 @@ static void initGameplayResources(Game* game) {
     game->map.currentRoom[1] = initialRoom[1];
 
     Link_init(&game->player, &game->map);
-    Room_getCenter(&game->map.rooms[initialRoom[1]][initialRoom[0]], game->player.base.pos);
 
-    Camera_follow(&game->map.camera, game->player.base.pos);
+    int centerPos[2];
+    Room_getCenter(&game->map.rooms[initialRoom[1]][initialRoom[0]], centerPos);
+    game->player.base.posX = (float)centerPos[0];
+    game->player.base.posY = (float)centerPos[1];
+
+    Camera_follow(&game->map.camera, centerPos);
     game->map.camera.x = game->map.camera.targetX;
     game->map.camera.y = game->map.camera.targetY;
 
@@ -161,10 +176,13 @@ static void resetPlayerStats(Game* game) {
 }
 
 static void checkEnemyCollisions(Game* game) {
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+
     for (int i = 0; i < game->enemyCount; i++) {
         if (!game->enemies[i].isActive) continue;
 
-        if (Enemy_collidesWith(&game->enemies[i], game->player.base.pos)) {
+        if (Enemy_collidesWith(&game->enemies[i], playerPos)) {
             Link_takeDamage(&game->player, 1);
         }
     }
@@ -224,51 +242,43 @@ static int countActiveEnemies(const Game* game) {
     return count;
 }
 
-static void handlePlayingInput(Game* game, InputAction input) {
-    int oldPos[2] = {game->player.base.pos[0], game->player.base.pos[1]};
-
-    switch (input) {
-        case INPUT_ACTION_QUIT:
-            game->running = false;
-            break;
-
-        case INPUT_ACTION_PAUSE_TOGGLE:
-            Game_pause(game);
-            break;
-
-        case INPUT_ACTION_MOVE_UP: {
-            const int delta[2] = {0, -1};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_MOVE_DOWN: {
-            const int delta[2] = {0, 1};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_MOVE_LEFT: {
-            const int delta[2] = {-1, 0};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_MOVE_RIGHT: {
-            const int delta[2] = {1, 0};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_ATTACK:
-            Link_attack(&game->player);
-            break;
-
-        default:
-            break;
+static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pause) {
+    if (quit) {
+        game->running = false;
+        return;
     }
 
-    if (oldPos[0] != game->player.base.pos[0] || oldPos[1] != game->player.base.pos[1]) {
+    if (pause) {
+        Game_pause(game);
+        return;
+    }
+
+    int gridPos[2];
+    Character_getGridPos(&game->player.base, gridPos);
+    int oldPos[2] = {gridPos[0], gridPos[1]};
+
+    // Gérer le mouvement fluide avec les touches maintenues
+    float deltaX = 0.0f;
+    float deltaY = 0.0f;
+
+    if (input->moveUp) deltaY -= MOVEMENT_SPEED;
+    if (input->moveDown) deltaY += MOVEMENT_SPEED;
+    if (input->moveLeft) deltaX -= MOVEMENT_SPEED;
+    if (input->moveRight) deltaX += MOVEMENT_SPEED;
+
+    // Appliquer le mouvement fluide
+    if (deltaX != 0.0f || deltaY != 0.0f) {
+        Link_moveSmooth(&game->player, deltaX, deltaY);
+    }
+
+    // Gérer l'attaque
+    if (input->attack) {
+        Link_attack(&game->player);
+    }
+
+    // Compter les déplacements de case
+    Character_getGridPos(&game->player.base, gridPos);
+    if (oldPos[0] != gridPos[0] || oldPos[1] != gridPos[1]) {
         game->stats.moves++;
     }
 }
@@ -464,8 +474,11 @@ void Game_handleInput(Game* game) {
         }
 
         case STATE_PLAYING: {
-            InputAction input = inputPoll();
-            handlePlayingInput(game, input);
+            InputState inputState;
+            bool quit = false;
+            bool pause = false;
+            inputPollContinuous(&inputState, &quit, &pause);
+            handlePlayingInput(game, &inputState, quit, pause);
             break;
         }
     }
@@ -478,8 +491,12 @@ void Game_update(Game* game) {
 
     Link_update(&game->player);
     handleAttack(game);
-    Camera_follow(&game->map.camera, game->player.base.pos);
-    Room_handleTransition(&game->map, game->player.base.pos);
+
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+
+    Camera_follow(&game->map.camera, playerPos);
+    Room_handleTransition(&game->map, playerPos);
 
     despawnDistantEnemies(game);
 
@@ -493,7 +510,7 @@ void Game_update(Game* game) {
 
     for (int i = 0; i < game->enemyCount; i++) {
         if (game->enemies[i].isActive) {
-            Enemy_update(&game->enemies[i], game->player.base.pos, game->enemies, game->enemyCount, i);
+            Enemy_update(&game->enemies[i], playerPos, game->enemies, game->enemyCount, i);
         }
     }
 

@@ -80,8 +80,7 @@ void Link_takeDamage(Link* link, int damage) {
 void Link_getAttackPosition(const Link* link, int attackPos[2]) {
     if (!link || !attackPos) return;
 
-    attackPos[0] = link->base.pos[0];
-    attackPos[1] = link->base.pos[1];
+    Character_getGridPos(&link->base, attackPos);
 
     switch (link->direction) {
         case LINK_DIR_UP:    attackPos[1]--; break;
@@ -98,8 +97,13 @@ bool Link_isAttacking(const Link* link) {
 void Link_move(Link* link, const int delta[2]) {
     if (!link || !delta) return;
 
-    int oldPos[2] = {link->base.pos[0], link->base.pos[1]};
+    int gridPos[2];
+    Character_getGridPos(&link->base, gridPos);
+    int oldPos[2] = {gridPos[0], gridPos[1]};
+
     Character_move(&link->base, delta);
+
+    Character_getGridPos(&link->base, gridPos);
 
     if (delta[0] > 0) link->direction = LINK_DIR_RIGHT;
     else if (delta[0] < 0) link->direction = LINK_DIR_LEFT;
@@ -109,7 +113,34 @@ void Link_move(Link* link, const int delta[2]) {
     AnimDirection animDir = toAnimDir(link->direction);
     Animation_setDirection(&link->animation, animDir);
 
-    if (oldPos[0] != link->base.pos[0] || oldPos[1] != link->base.pos[1]) {
+    if (oldPos[0] != gridPos[0] || oldPos[1] != gridPos[1]) {
+        Animation_startWalk(&link->animation, animDir);
+    }
+}
+
+void Link_moveSmooth(Link* link, float deltaX, float deltaY) {
+    if (!link) return;
+    if (deltaX == 0.0f && deltaY == 0.0f) return;
+
+    int gridPos[2];
+    Character_getGridPos(&link->base, gridPos);
+    int oldPos[2] = {gridPos[0], gridPos[1]};
+
+    Character_moveSmooth(&link->base, deltaX, deltaY);
+
+    Character_getGridPos(&link->base, gridPos);
+
+    // Mise à jour de la direction en fonction du mouvement
+    if (deltaX > 0) link->direction = LINK_DIR_RIGHT;
+    else if (deltaX < 0) link->direction = LINK_DIR_LEFT;
+    else if (deltaY > 0) link->direction = LINK_DIR_DOWN;
+    else if (deltaY < 0) link->direction = LINK_DIR_UP;
+
+    AnimDirection animDir = toAnimDir(link->direction);
+    Animation_setDirection(&link->animation, animDir);
+
+    // Démarre l'animation de marche si le personnage a bougé
+    if (deltaX != 0.0f || deltaY != 0.0f) {
         Animation_startWalk(&link->animation, animDir);
     }
 }
@@ -121,8 +152,11 @@ void Link_draw(const Link* link, SDL_Renderer* renderer) {
     SDL_Texture* tex = Animation_getCurrentTexture(&link->animation, &link->sprites);
     if (!tex) return;
 
+    int gridPos[2];
+    Character_getGridPos(&link->base, gridPos);
+
     int screen[2];
-    Camera_worldToScreen(&link->base.map->camera, link->base.pos, screen);
+    Camera_worldToScreen(&link->base.map->camera, gridPos, screen);
     renderTexture(tex, renderer, screen[0], screen[1], GRID_CELL_SIZE, GRID_CELL_SIZE);
 }
 
