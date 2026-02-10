@@ -1,69 +1,53 @@
-# NUPRC - Jeu Zelda-like en C
+# NUPRC
 
-## Description
-
-Jeu d'action/aventure en 2D inspiré de Zelda, développé en C avec SDL2.
-Le joueur contrôle Link et doit éliminer les ennemis dans chaque salle.
+Petit jeu 2D inspiré des Zelda NES, codé en C avec SDL2.
 
 ## Contrôles
 
-| Touche | Action |
-|--------|--------|
-| ↑ ↓ ← → | Déplacement |
-| F | Attaque |
-| P / Échap | Pause |
-| Entrée | Valider (menus) |
+- `↑ ↓ ← →` ou `Z Q S D`: déplacement
+- `F`: attaque
+- `P` ou `Échap`: pause
+- `Entrée` / `Espace`: valider dans les menus
 
-## Compilation
+## Build
 
 ```bash
-mkdir build && cd build
-cmake ..
-make
-./NUPRC
+cmake -S . -B build
+cmake --build build
+./build/NUPRC
 ```
 
-### Dépendances
+## Dépendances
 
-- SDL2
-- SDL2_ttf
-- SDL2_image
-- SDL2_mixer
+- `SDL2`
+- `SDL2_ttf`
+- `SDL2_image`
+- `SDL2_mixer`
 
-Sur macOS avec Homebrew :
+Exemple (macOS/Homebrew):
+
 ```bash
 brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
 ```
 
-## Structure du projet
+## Audio
 
-```
-NUPRC/
-├── include/          # Headers
-│   ├── core.h        # Constantes et types
-│   ├── game.h        # Boucle principale
-│   ├── map.h         # Gestion de la carte
-│   ├── link.h        # Personnage jouable
-│   ├── enemy.h       # Ennemis et IA
-│   ├── animation.h   # Système d'animation
-│   ├── menu.h        # Système de menus
-│   ├── hud.h         # Interface utilisateur
-│   ├── render.h      # Fonctions SDL
-│   ├── iomanager.h   # Gestion des entrées
-│   └── utils.h       # Utilitaires
-├── src/              # Sources
-├── assets/           # Ressources
-│   ├── fonts/
-│   ├── textures/
-│   └── meta/
-└── CMakeLists.txt
-```
+Toute la config audio est dans:
 
-## Fonctionnalités
+`assets/meta/audio/audio.cfg`
 
-- Système de menus (principal, pause, game over)
-- 3 types d'ennemis (basique, rapide, tank)
-- 2 modes d'IA (aléatoire, poursuite)
-- Animations de sprites (marche, attaque)
-- Collision entre personnages
-- HUD avec statistiques
+Tu peux y régler:
+- les OST en boucle (`MUSIC_MENU`, `MUSIC_GAMEPLAY`, `MUSIC_GAMEOVER`)
+- les SFX par événement (`SFX_ENEMY_KILLED`, `SFX_WALK`, `SFX_MENU_CLICK`, etc.)
+- les volumes (`MASTER_VOLUME`, `MUSIC_VOLUME`, `SFX_VOLUME`)
+- la fréquence du son de pas (`WALK_INTERVAL_FRAMES`)
+
+Dépose tes fichiers audio dans:
+- `assets/sounds/music/`
+- `assets/sounds/sfx/`
+
+## Crédits Assets
+
+- Tiles map + sprites Link: <https://github.com/asweigart/nes_zelda_map_data>
+- Sprites attaque Link: <https://www.spriters-resource.com/nes/legendofzelda/asset/8366/>
+- Sprites ennemis: <https://www.spriters-resource.com/nes/legendofzelda/asset/31805/>

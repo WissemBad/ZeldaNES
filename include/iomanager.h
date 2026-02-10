@@ -1,8 +1,3 @@
-/**
- * @file iomanager.h
- * @brief Gestion des entrées utilisateur (clavier)
- */
-
 #ifndef NUPRC_IOMANAGER_H
 #define NUPRC_IOMANAGER_H
 
@@ -23,6 +18,16 @@ typedef enum {
     INPUT_ACTION_INVENTORY_TOGGLE
 } InputAction;
 
+typedef struct {
+    bool moveUp;
+    bool moveDown;
+    bool moveLeft;
+    bool moveRight;
+    bool attack;
+    bool interact;
+} InputState;
+
 InputAction inputPoll(void);
+void inputPollContinuous(InputState* state, bool* quit, bool* pause);
 
 #endif
