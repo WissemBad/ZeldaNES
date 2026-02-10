@@ -1,8 +1,3 @@
-/**
- * @file link.h
- * @brief Gestion du personnage jouable (Link)
- */
-
 #ifndef NUPRC_LINK_H
 #define NUPRC_LINK_H
 

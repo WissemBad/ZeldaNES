@@ -1,3 +1,0 @@
-- Map Tiles and normal Link sprites here : https://github.com/asweigart/nes_zelda_map_data?tab=readme-ov-file
-- Link Attack sprites here : https://www.spriters-resource.com/nes/legendofzelda/asset/8366/
-- Enemy sprites here : https://www.spriters-resource.com/nes/legendofzelda/asset/31805/

@@ -1,8 +1,3 @@
-/**
- * @file character.h
- * @brief Structure de base pour les personnages (joueur et ennemis)
- */
-
 #ifndef NUPRC_CHARACTER_H
 #define NUPRC_CHARACTER_H
 
@@ -16,8 +11,8 @@ typedef enum {
 
 typedef struct {
     CharacterType type;
-    float         posX;          // Position X en coordonnées flottantes
-    float         posY;          // Position Y en coordonnées flottantes
+    float         posX;
+    float         posY;
     int           lives;
     SDL_Texture*  texture;
     Map*          map;

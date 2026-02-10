@@ -1,8 +1,3 @@
-/**
- * @file game.c
- * @brief Boucle principale du jeu
- */
-
 #include "game.h"
 #include "render.h"
 #include "iomanager.h"
@@ -161,7 +156,7 @@ static void initGameplayResources(Game* game) {
     game->player.base.posX = (float)centerPos[0];
     game->player.base.posY = (float)centerPos[1];
 
-    Camera_follow(&game->map.camera, centerPos);
+    Camera_followF(&game->map.camera, game->player.base.posX, game->player.base.posY);
     game->map.camera.x = game->map.camera.targetX;
     game->map.camera.y = game->map.camera.targetY;
 
@@ -257,7 +252,6 @@ static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pa
     Character_getGridPos(&game->player.base, gridPos);
     int oldPos[2] = {gridPos[0], gridPos[1]};
 
-    // Gérer le mouvement fluide avec les touches maintenues
     float deltaX = 0.0f;
     float deltaY = 0.0f;
 
@@ -266,17 +260,22 @@ static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pa
     if (input->moveLeft) deltaX -= MOVEMENT_SPEED;
     if (input->moveRight) deltaX += MOVEMENT_SPEED;
 
-    // Appliquer le mouvement fluide
-    if (deltaX != 0.0f || deltaY != 0.0f) {
-        Link_moveSmooth(&game->player, deltaX, deltaY);
+    if (deltaX != 0.0f && deltaY != 0.0f) {
+        const float diagonalFactor = 0.70710678f;
+        deltaX *= diagonalFactor;
+        deltaY *= diagonalFactor;
     }
 
-    // Gérer l'attaque
+    if (deltaX != 0.0f || deltaY != 0.0f) {
+        Link_moveSmooth(&game->player, deltaX, deltaY);
+    } else if (!Link_isAttacking(&game->player)) {
+        Animation_stop(&game->player.animation);
+    }
+
     if (input->attack) {
         Link_attack(&game->player);
     }
 
-    // Compter les déplacements de case
     Character_getGridPos(&game->player.base, gridPos);
     if (oldPos[0] != gridPos[0] || oldPos[1] != gridPos[1]) {
         game->stats.moves++;
@@ -360,7 +359,6 @@ static void drawPlayer(const Game* game) {
     Link_draw(&game->player, game->render.renderer);
 }
 
-
 void Game_init(Game* game) {
     game->state = STATE_MENU;
     game->previousState = STATE_MENU;
@@ -405,7 +403,6 @@ void Game_destroy(Game* game) {
     }
     quitSDL(game->render.window, game->render.renderer);
 }
-
 
 void Game_setState(Game* game, GameState newState) {
     game->previousState = game->state;
@@ -459,10 +456,6 @@ void Game_resume(Game* game) {
     }
 }
 
-//==============================================================================
-// FONCTIONS PUBLIQUES - BOUCLE DE JEU
-//==============================================================================
-
 void Game_handleInput(Game* game) {
     switch (game->state) {
         case STATE_MENU:
@@ -495,7 +488,7 @@ void Game_update(Game* game) {
     int playerPos[2];
     Character_getGridPos(&game->player.base, playerPos);
 
-    Camera_follow(&game->map.camera, playerPos);
+    Camera_followF(&game->map.camera, game->player.base.posX, game->player.base.posY);
     Room_handleTransition(&game->map, playerPos);
 
     despawnDistantEnemies(game);
