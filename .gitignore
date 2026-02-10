@@ -2,6 +2,7 @@
 cmake-build-*/
 build/
 out/
+_old/
 
 # C/C++ compilation artifacts
 *.o
@@ -14,6 +15,7 @@ out/
 
 # CLion IDE
 .idea/
+.
 
 # macOS system files
 .DS_Store
