@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: macos-latest
+            shell: bash
+          - os: windows-latest
+            shell: msys2 {0}
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            pkg-config \
+            libsdl2-dev \
+            libsdl2-ttf-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev
+
+      - name: Setup dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install cmake pkg-config sdl2 sdl2_ttf sdl2_image sdl2_mixer
+
+      - name: Setup dependencies (Windows/MSYS2)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-SDL2_ttf
+            mingw-w64-x86_64-SDL2_image
+            mingw-w64-x86_64-SDL2_mixer
+
+      - name: Configure + Build (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          cmake -S . -B build
+          cmake --build build --config Release
+
+      - name: Configure + Build (Windows/MSYS2)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G Ninja
+          cmake --build build
