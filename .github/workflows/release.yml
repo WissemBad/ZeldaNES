@@ -26,6 +26,9 @@ jobs:
             shell: msys2 {0}
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,13 +37,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake \
-            pkg-config \
-            libsdl2-dev \
-            libsdl2-ttf-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev
+          sudo apt-get install -y cmake pkg-config \
+            libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-mixer-dev
 
       - name: Setup dependencies (macOS)
         if: matrix.os == 'macos-latest'
@@ -66,31 +64,26 @@ jobs:
 
       - name: Build (Unix)
         if: matrix.os != 'windows-latest'
-        shell: bash
         run: |
-          cmake -S . -B build
-          cmake --build build --config Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
 
       - name: Build (Windows/MSYS2)
         if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
         run: |
-          cmake -S . -B build -G Ninja
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
       - name: Package (Linux/macOS)
         if: matrix.os != 'windows-latest'
-        shell: bash
         run: |
           mkdir -p dist/${{ matrix.package_name }}
           cp build/NUPRC dist/${{ matrix.package_name }}/
           cp -R assets dist/${{ matrix.package_name }}/
-          cd dist
-          tar -czf ${{ matrix.package_name }}.tar.gz ${{ matrix.package_name }}
+          (cd dist && tar -czf ${{ matrix.package_name }}.tar.gz ${{ matrix.package_name }})
 
       - name: Package (Windows)
         if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
         run: |
           mkdir -p dist/${{ matrix.package_name }}
           cp build/NUPRC.exe dist/${{ matrix.package_name }}/
@@ -102,16 +95,13 @@ jobs:
           cp /mingw64/bin/libgcc_s_seh-1.dll dist/${{ matrix.package_name }}/ || true
           cp /mingw64/bin/libstdc++-6.dll dist/${{ matrix.package_name }}/ || true
           cp /mingw64/bin/libwinpthread-1.dll dist/${{ matrix.package_name }}/ || true
-          cd dist
-          zip -r ${{ matrix.package_name }}.zip ${{ matrix.package_name }}
+          (cd dist && zip -r ${{ matrix.package_name }}.zip ${{ matrix.package_name }})
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package_name }}
-          path: |
-            dist/${{ matrix.package_name }}.tar.gz
-            dist/${{ matrix.package_name }}.zip
+          path: dist/${{ matrix.package_name }}.*
           if-no-files-found: error
 
   publish-release:
