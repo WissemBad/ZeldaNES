@@ -55,6 +55,7 @@ jobs:
             mingw-w64-x86_64-SDL2_ttf
             mingw-w64-x86_64-SDL2_image
             mingw-w64-x86_64-SDL2_mixer
+            zip
 
       - name: Configure + Build (Unix)
         if: matrix.os != 'windows-latest'
