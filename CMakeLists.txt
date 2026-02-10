@@ -4,7 +4,6 @@ project(NUPRC C)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Options de compilation strictes
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -28,6 +27,7 @@ add_executable(NUPRC
         src/hud.c
         src/menu.c
         src/animation.c
+        src/audio.c
 )
 
 target_include_directories(NUPRC PRIVATE
@@ -52,6 +52,4 @@ target_link_libraries(NUPRC PRIVATE
         ${SDL2MIXER_LIBRARIES}
 )
 
-# Copier les assets dans le répertoire de build
 file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
-

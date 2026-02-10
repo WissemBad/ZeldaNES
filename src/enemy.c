@@ -1,9 +1,5 @@
-/**
- * @file enemy.c
- * @brief Gestion des ennemis
- */
-
 #include "enemy.h"
+#include "map.h"
 #include "render.h"
 #include "utils.h"
 #include <stdlib.h>
@@ -27,12 +23,12 @@ static int getEnemyLives(EnemyType type) {
     }
 }
 
-/**
- * @brief Calcule le meilleur déplacement vers la cible (poursuite)
- */
 static void calculateChaseMove(const Enemy* enemy, const int targetPos[2], int delta[2]) {
-    int dx = targetPos[0] - enemy->base.pos[0];
-    int dy = targetPos[1] - enemy->base.pos[1];
+    int currentPos[2];
+    Character_getGridPos(&enemy->base, currentPos);
+
+    int dx = targetPos[0] - currentPos[0];
+    int dy = targetPos[1] - currentPos[1];
 
     delta[0] = 0;
     delta[1] = 0;
@@ -46,9 +42,6 @@ static void calculateChaseMove(const Enemy* enemy, const int targetPos[2], int d
     }
 }
 
-/**
- * @brief Calcule un déplacement aléatoire
- */
 static void calculateRandomMove(int delta[2]) {
     const int deltas[4][2] = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
     int direction = rand() % 4;
@@ -56,9 +49,6 @@ static void calculateRandomMove(int delta[2]) {
     delta[1] = deltas[direction][1];
 }
 
-/**
- * @brief Convertit un delta de mouvement en AnimDirection
- */
 static AnimDirection deltaToAnimDir(const int delta[2]) {
     if (delta[0] > 0) return ANIM_DIR_RIGHT;
     if (delta[0] < 0) return ANIM_DIR_LEFT;
@@ -67,15 +57,11 @@ static AnimDirection deltaToAnimDir(const int delta[2]) {
     return ANIM_DIR_DOWN;
 }
 
-//==============================================================================
-// FONCTIONS PUBLIQUES
-//==============================================================================
-
 void Enemy_init(Enemy* enemy, EnemyType type, EnemyAI ai, Map* map, const int initialPos[2]) {
     Character_init(&enemy->base, CHAR_ENEMY, getEnemyLives(type), map);
 
-    enemy->base.pos[0] = initialPos[0];
-    enemy->base.pos[1] = initialPos[1];
+    enemy->base.posX = (float)initialPos[0];
+    enemy->base.posY = (float)initialPos[1];
     enemy->enemyType = type;
     enemy->ai = ai;
     enemy->moveTimer = 0;
@@ -84,21 +70,17 @@ void Enemy_init(Enemy* enemy, EnemyType type, EnemyAI ai, Map* map, const int in
     enemy->isActive = true;
     enemy->hitTimer = 0;
 
-    // Initialiser les animations
     Animation_init(&enemy->animation);
     SpriteSet_loadEnemy(&enemy->sprites, map->renderer);
 
-    // La texture de base n'est plus utilisée directement
     enemy->base.texture = NULL;
 }
 
 void Enemy_update(Enemy* enemy, const int playerPos[2], const Enemy* allEnemies, int enemyCount, int selfIndex) {
     if (!enemy->isActive) return;
 
-    // Mise à jour de l'animation
     Animation_update(&enemy->animation);
 
-    // Mise à jour du timer de hit (clignotement)
     if (enemy->hitTimer > 0) {
         enemy->hitTimer--;
     }
@@ -124,28 +106,29 @@ void Enemy_update(Enemy* enemy, const int playerPos[2], const Enemy* allEnemies,
             break;
     }
 
-    // Calculer la nouvelle position
+    int currentPos[2];
+    Character_getGridPos(&enemy->base, currentPos);
+
     int newPos[2] = {
-        enemy->base.pos[0] + delta[0],
-        enemy->base.pos[1] + delta[1]
+        currentPos[0] + delta[0],
+        currentPos[1] + delta[1]
     };
 
-    // Vérifier si la position est occupée par un autre ennemi
     if (Enemy_isPositionOccupied(newPos, allEnemies, enemyCount, selfIndex)) {
-        // Ne pas bouger, mais mettre à jour la direction de l'animation
+
         AnimDirection animDir = deltaToAnimDir(delta);
         Animation_setDirection(&enemy->animation, animDir);
         return;
     }
 
-    // Sauvegarder l'ancienne position
-    int oldPos[2] = {enemy->base.pos[0], enemy->base.pos[1]};
+    int oldPos[2];
+    Character_getGridPos(&enemy->base, oldPos);
 
-    // Tenter de se déplacer (vérifie aussi les murs)
     Character_move(&enemy->base, delta);
 
-    // Mettre à jour l'animation si on a bougé
-    if (oldPos[0] != enemy->base.pos[0] || oldPos[1] != enemy->base.pos[1]) {
+    int newPosCheck[2];
+    Character_getGridPos(&enemy->base, newPosCheck);
+    if (oldPos[0] != newPosCheck[0] || oldPos[1] != newPosCheck[1]) {
         AnimDirection animDir = deltaToAnimDir(delta);
         Animation_startWalk(&enemy->animation, animDir);
     }
@@ -156,7 +139,10 @@ bool Enemy_isPositionOccupied(const int pos[2], const Enemy* allEnemies, int ene
         if (i == excludeIndex) continue;
         if (!allEnemies[i].isActive) continue;
 
-        if (allEnemies[i].base.pos[0] == pos[0] && allEnemies[i].base.pos[1] == pos[1]) {
+        int enemyPos[2];
+        Character_getGridPos(&allEnemies[i].base, enemyPos);
+
+        if (enemyPos[0] == pos[0] && enemyPos[1] == pos[1]) {
             return true;
         }
     }
@@ -165,14 +151,18 @@ bool Enemy_isPositionOccupied(const int pos[2], const Enemy* allEnemies, int ene
 
 bool Enemy_collidesWith(const Enemy* enemy, const int pos[2]) {
     if (!enemy->isActive) return false;
-    return (enemy->base.pos[0] == pos[0] && enemy->base.pos[1] == pos[1]);
+
+    int enemyPos[2];
+    Character_getGridPos(&enemy->base, enemyPos);
+
+    return (enemyPos[0] == pos[0] && enemyPos[1] == pos[1]);
 }
 
 bool Enemy_takeDamage(Enemy* enemy, int damage) {
     if (!enemy->isActive) return false;
 
     enemy->base.lives -= damage;
-    enemy->hitTimer = 20;  // Effet de clignotement pendant 20 frames
+    enemy->hitTimer = 20;
 
     if (enemy->base.lives <= 0) {
         enemy->isActive = false;
@@ -185,32 +175,26 @@ bool Enemy_takeDamage(Enemy* enemy, int damage) {
 void Enemy_draw(const Enemy* enemy, SDL_Renderer* renderer) {
     if (!enemy->isActive) return;
 
-    // Effet de clignotement quand touché
     if (enemy->hitTimer > 0 && (enemy->hitTimer / 3) % 2 == 0) {
-        return;  // Ne pas dessiner (clignotement)
+        return;
     }
 
-    // Récupérer la texture animée
     SDL_Texture* texture = Animation_getCurrentTexture(&enemy->animation, &enemy->sprites);
     if (!texture) return;
 
-    // Convertir en coordonnées écran
     int screenPos[2];
-    worldToScreen(enemy->base.pos, screenPos, enemy->base.map->currentRoom);
+    Camera_worldToScreenF(&enemy->base.map->camera, enemy->base.posX, enemy->base.posY, screenPos);
 
-    // Dessiner avec teinte rouge si récemment touché
     if (enemy->hitTimer > 0) {
         SDL_SetTextureColorMod(texture, 255, 100, 100);
     }
 
     renderTexture(texture, renderer, screenPos[0], screenPos[1], GRID_CELL_SIZE, GRID_CELL_SIZE);
 
-    // Réinitialiser la teinte
     if (enemy->hitTimer > 0) {
         SDL_SetTextureColorMod(texture, 255, 255, 255);
     }
 
-    // Barre de vie pour les ennemis avec plus d'une vie (tanks)
     int maxLives = getEnemyLives(enemy->enemyType);
     if (maxLives > 1) {
         int barWidth = GRID_CELL_SIZE - 10;
@@ -218,12 +202,10 @@ void Enemy_draw(const Enemy* enemy, SDL_Renderer* renderer) {
         int barX = screenPos[0] + 5;
         int barY = screenPos[1] - 6;
 
-        // Fond de la barre (gris)
         SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
         SDL_Rect bgRect = {barX, barY, barWidth, barHeight};
         SDL_RenderFillRect(renderer, &bgRect);
 
-        // Barre de vie (vert -> jaune -> rouge selon les PV)
         int healthWidth = (enemy->base.lives * barWidth) / maxLives;
         int r = 255 - (enemy->base.lives * 255 / maxLives);
         int g = (enemy->base.lives * 255 / maxLives);
@@ -231,7 +213,6 @@ void Enemy_draw(const Enemy* enemy, SDL_Renderer* renderer) {
         SDL_Rect healthRect = {barX, barY, healthWidth, barHeight};
         SDL_RenderFillRect(renderer, &healthRect);
 
-        // Bordure
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &bgRect);
     }

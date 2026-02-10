@@ -1,44 +1,34 @@
-/**
- * @file game.c
- * @brief Implémentation du cycle de vie et de la boucle principale du jeu
- */
-
 #include "game.h"
 #include "render.h"
 #include "iomanager.h"
 #include "hud.h"
+#include "audio.h"
 
 #include <stdlib.h>
 #include <time.h>
 
-//==============================================================================
-// CONSTANTES PRIVÉES
-//==============================================================================
-
-/** Nombre d'ennemis à spawner par salle */
-#define ENEMIES_PER_ROOM    3
-
-/** Distance minimale de spawn entre ennemi et joueur */
+#define ENEMIES_PER_ZONE    5
 #define ENEMY_SPAWN_MIN_DISTANCE    4
+#define ENEMY_SPAWN_MAX_DISTANCE    10
+#define ENEMY_DESPAWN_DISTANCE      20
 
-//==============================================================================
-// FONCTIONS PRIVÉES
-//==============================================================================
+static float absf(float value) {
+    return value < 0.0f ? -value : value;
+}
 
-/**
- * @brief Génère une position aléatoire valide dans la salle actuelle
- */
-static void getRandomPositionInRoom(const Map* map, const int playerPos[2], int outPos[2]) {
-    const Room* room = &map->rooms[map->currentRoom[1]][map->currentRoom[0]];
-    int attempts = 0;
-    const int maxAttempts = 50;
+static void getRandomPositionNearPlayer(const Map* map, const int playerPos[2], int outPos[2]) {
+    for (int attempts = 0; attempts < 100; attempts++) {
+        int offsetX = (rand() % (2 * ENEMY_SPAWN_MAX_DISTANCE + 1)) - ENEMY_SPAWN_MAX_DISTANCE;
+        int offsetY = (rand() % (2 * ENEMY_SPAWN_MAX_DISTANCE + 1)) - ENEMY_SPAWN_MAX_DISTANCE;
 
-    do {
-        outPos[0] = room->startX + 1 + (rand() % (GRID_ROOM_WIDTH - 2));
-        outPos[1] = room->startY + 1 + (rand() % (GRID_ROOM_HEIGHT - 2));
-        attempts++;
+        outPos[0] = playerPos[0] + offsetX;
+        outPos[1] = playerPos[1] + offsetY;
 
-        // Vérifie que la position n'est pas bloquante et assez loin du joueur
+        if (outPos[0] < 1 || outPos[0] >= GRID_WORLD_WIDTH - 1 ||
+            outPos[1] < 1 || outPos[1] >= GRID_WORLD_HEIGHT - 1) {
+            continue;
+        }
+
         int dx = outPos[0] - playerPos[0];
         int dy = outPos[1] - playerPos[1];
         int distance = (dx > 0 ? dx : -dx) + (dy > 0 ? dy : -dy);
@@ -46,25 +36,25 @@ static void getRandomPositionInRoom(const Map* map, const int playerPos[2], int 
         if (!Map_isBlocking(map, outPos) && distance >= ENEMY_SPAWN_MIN_DISTANCE) {
             return;
         }
-    } while (attempts < maxAttempts);
+    }
+
+    outPos[0] = playerPos[0] + ENEMY_SPAWN_MIN_DISTANCE;
+    outPos[1] = playerPos[1];
 }
 
-/**
- * @brief Spawn les ennemis pour la salle actuelle
- */
-static void spawnEnemiesForRoom(Game* game) {
-    // Nettoyer les anciens ennemis
+static void spawnEnemiesNearPlayer(Game* game) {
     for (int i = 0; i < game->enemyCount; i++) {
         Enemy_destroy(&game->enemies[i]);
     }
     game->enemyCount = 0;
 
-    // Spawner de nouveaux ennemis
-    for (int i = 0; i < ENEMIES_PER_ROOM && game->enemyCount < GAME_MAX_ENEMIES; i++) {
-        int spawnPos[2];
-        getRandomPositionInRoom(&game->map, game->player.base.pos, spawnPos);
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
 
-        // Alterner entre les types d'ennemis et d'IA
+    for (int i = 0; i < ENEMIES_PER_ZONE && game->enemyCount < GAME_MAX_ENEMIES; i++) {
+        int spawnPos[2];
+        getRandomPositionNearPlayer(&game->map, playerPos, spawnPos);
+
         EnemyType type;
         EnemyAI ai;
 
@@ -92,31 +82,92 @@ static void spawnEnemiesForRoom(Game* game) {
     }
 }
 
-/**
- * @brief Initialise les ressources du gameplay (carte, joueur, ennemis)
- */
+static void spawnSingleEnemy(Game* game) {
+    int slot = -1;
+
+    for (int i = 0; i < game->enemyCount; i++) {
+        if (!game->enemies[i].isActive) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot == -1) {
+        if (game->enemyCount >= GAME_MAX_ENEMIES) return;
+        slot = game->enemyCount;
+        game->enemyCount++;
+    }
+
+    int spawnPos[2];
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+    getRandomPositionNearPlayer(&game->map, playerPos, spawnPos);
+
+    EnemyType type;
+    EnemyAI ai;
+    int r = rand() % 3;
+
+    switch (r) {
+        case 0:
+            type = ENEMY_TYPE_BASIC;
+            ai = ENEMY_AI_RANDOM;
+            break;
+        case 1:
+            type = ENEMY_TYPE_FAST;
+            ai = ENEMY_AI_CHASE;
+            break;
+        default:
+            type = ENEMY_TYPE_TANK;
+            ai = ENEMY_AI_CHASE;
+            break;
+    }
+
+    Enemy_init(&game->enemies[slot], type, ai, &game->map, spawnPos);
+}
+
+static void despawnDistantEnemies(Game* game) {
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+
+    for (int i = 0; i < game->enemyCount; i++) {
+        if (!game->enemies[i].isActive) continue;
+
+        int enemyPos[2];
+        Character_getGridPos(&game->enemies[i].base, enemyPos);
+
+        int dx = enemyPos[0] - playerPos[0];
+        int dy = enemyPos[1] - playerPos[1];
+        int distance = (dx > 0 ? dx : -dx) + (dy > 0 ? dy : -dy);
+
+        if (distance > ENEMY_DESPAWN_DISTANCE) {
+            game->enemies[i].isActive = false;
+        }
+    }
+}
+
 static void initGameplayResources(Game* game) {
     srand((int)time(NULL));
 
-    // Initialisation de la carte
     Map_init(&game->map, game->render.renderer);
 
-    // Configuration de la salle initiale
     const int initialRoom[2] = GAME_INITIAL_ROOM;
     game->map.currentRoom[0] = initialRoom[0];
     game->map.currentRoom[1] = initialRoom[1];
 
-    // Initialisation du joueur
     Link_init(&game->player, &game->map);
-    Room_getCenter(&game->map.rooms[initialRoom[1]][initialRoom[0]], game->player.base.pos);
 
-    // Spawn des ennemis
-    spawnEnemiesForRoom(game);
+    int centerPos[2];
+    Room_getCenter(&game->map.rooms[initialRoom[1]][initialRoom[0]], centerPos);
+    game->player.base.posX = (float)centerPos[0];
+    game->player.base.posY = (float)centerPos[1];
+
+    Camera_followF(&game->map.camera, game->player.base.posX, game->player.base.posY);
+    game->map.camera.x = game->map.camera.targetX;
+    game->map.camera.y = game->map.camera.targetY;
+
+    spawnEnemiesNearPlayer(game);
 }
 
-/**
- * @brief Réinitialise les statistiques du joueur
- */
 static void resetPlayerStats(Game* game) {
     game->stats.score = GAME_INITIAL_SCORE;
     game->stats.kills = 0;
@@ -124,23 +175,23 @@ static void resetPlayerStats(Game* game) {
     game->stats.moves = 0;
 }
 
-/**
- * @brief Vérifie et gère les collisions entre Link et les ennemis
- */
 static void checkEnemyCollisions(Game* game) {
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
+
     for (int i = 0; i < game->enemyCount; i++) {
         if (!game->enemies[i].isActive) continue;
 
-        if (Enemy_collidesWith(&game->enemies[i], game->player.base.pos)) {
+        int livesBefore = game->player.base.lives;
+        if (Enemy_collidesWith(&game->enemies[i], playerPos)) {
             Link_takeDamage(&game->player, 1);
+            if (game->player.base.lives < livesBefore) {
+                Audio_playSfx(AUDIO_SFX_PLAYER_HIT);
+            }
         }
     }
 }
 
-/**
- * @brief Gère l'attaque de Link et les dégâts aux ennemis
- * L'attaque touche pendant toute sa durée active et a une zone d'effet en arc
- */
 static void handleAttack(Game* game) {
     if (!Link_isAttacking(&game->player)) return;
     if (game->player.attackCooldown < LINK_ATTACK_COOLDOWN - LINK_ATTACK_ACTIVE_TIME) return;
@@ -178,6 +229,7 @@ static void handleAttack(Game* game) {
                 if (Enemy_takeDamage(&game->enemies[i], 1)) {
                     game->stats.kills++;
                     game->stats.score += ENEMY_KILL_SCORE;
+                    Audio_playSfx(AUDIO_SFX_ENEMY_KILLED);
                 }
                 break;
             }
@@ -185,9 +237,6 @@ static void handleAttack(Game* game) {
     }
 }
 
-/**
- * @brief Compte le nombre d'ennemis actifs
- */
 static int countActiveEnemies(const Game* game) {
     int count = 0;
     for (int i = 0; i < game->enemyCount; i++) {
@@ -198,74 +247,78 @@ static int countActiveEnemies(const Game* game) {
     return count;
 }
 
-/**
- * @brief Gère les inputs pendant l'état PLAYING
- */
-static void handlePlayingInput(Game* game, InputAction input) {
-    int oldPos[2] = {game->player.base.pos[0], game->player.base.pos[1]};
-
-    switch (input) {
-        case INPUT_ACTION_QUIT:
-            game->running = false;
-            break;
-
-        case INPUT_ACTION_PAUSE_TOGGLE:
-            Game_pause(game);
-            break;
-
-        case INPUT_ACTION_MOVE_UP: {
-            const int delta[2] = {0, -1};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_MOVE_DOWN: {
-            const int delta[2] = {0, 1};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_MOVE_LEFT: {
-            const int delta[2] = {-1, 0};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_MOVE_RIGHT: {
-            const int delta[2] = {1, 0};
-            Link_move(&game->player, delta);
-            break;
-        }
-
-        case INPUT_ACTION_ATTACK:
-            Link_attack(&game->player);
-            break;
-
-        default:
-            break;
+static void handlePlayingInput(Game* game, InputState* input, bool quit, bool pause) {
+    if (quit) {
+        Audio_updateWalk(false);
+        game->running = false;
+        return;
     }
 
-    // Incrémenter le compteur de mouvements si le joueur a bougé
-    if (oldPos[0] != game->player.base.pos[0] || oldPos[1] != game->player.base.pos[1]) {
+    if (pause) {
+        Audio_updateWalk(false);
+        Game_pause(game);
+        return;
+    }
+
+    int gridPos[2];
+    Character_getGridPos(&game->player.base, gridPos);
+    int oldPos[2] = {gridPos[0], gridPos[1]};
+    float oldX = game->player.base.posX;
+    float oldY = game->player.base.posY;
+
+    float deltaX = 0.0f;
+    float deltaY = 0.0f;
+
+    if (input->moveUp) deltaY -= MOVEMENT_SPEED;
+    if (input->moveDown) deltaY += MOVEMENT_SPEED;
+    if (input->moveLeft) deltaX -= MOVEMENT_SPEED;
+    if (input->moveRight) deltaX += MOVEMENT_SPEED;
+
+    if (deltaX != 0.0f && deltaY != 0.0f) {
+        const float diagonalFactor = 0.70710678f;
+        deltaX *= diagonalFactor;
+        deltaY *= diagonalFactor;
+    }
+
+    if (deltaX != 0.0f || deltaY != 0.0f) {
+        Link_moveSmooth(&game->player, deltaX, deltaY);
+    } else if (!Link_isAttacking(&game->player)) {
+        Animation_stop(&game->player.animation);
+    }
+
+    const bool isMoving = absf(game->player.base.posX - oldX) > 0.0001f ||
+                          absf(game->player.base.posY - oldY) > 0.0001f;
+    Audio_updateWalk(isMoving);
+
+    if (input->attack) {
+        const bool wasAttacking = Link_isAttacking(&game->player);
+        Link_attack(&game->player);
+        if (!wasAttacking && Link_isAttacking(&game->player)) {
+            Audio_playSfx(AUDIO_SFX_ATTACK);
+        }
+    }
+
+    Character_getGridPos(&game->player.base, gridPos);
+    if (oldPos[0] != gridPos[0] || oldPos[1] != gridPos[1]) {
         game->stats.moves++;
     }
 }
 
-/**
- * @brief Gère les actions retournées par les menus
- */
 static void handleMenuAction(Game* game, MenuAction action) {
     switch (action) {
         case MENU_ACTION_START:
         case MENU_ACTION_RESTART:
+            Audio_playSfx(AUDIO_SFX_MENU_CLICK);
             Game_startNewGame(game);
             break;
 
         case MENU_ACTION_RESUME:
+            Audio_playSfx(AUDIO_SFX_MENU_CLICK);
             Game_resume(game);
             break;
 
         case MENU_ACTION_QUIT:
+            Audio_playSfx(AUDIO_SFX_MENU_CLICK);
             if (game->state == STATE_MENU) {
                 game->running = false;
             } else {
@@ -278,9 +331,6 @@ static void handleMenuAction(Game* game, MenuAction action) {
     }
 }
 
-/**
- * @brief Dessine l'effet d'attaque de Link avec la zone en arc
- */
 static void drawAttackEffect(const Game* game) {
     if (!Link_isAttacking(&game->player)) return;
 
@@ -310,14 +360,13 @@ static void drawAttackEffect(const Game* game) {
 
     SDL_SetRenderDrawBlendMode(game->render.renderer, SDL_BLENDMODE_BLEND);
 
-    // Dessiner la zone d'attaque avec un dégradé (centre plus lumineux)
     for (int z = 0; z < 3; z++) {
-        int screenX = (attackZone[z][0] - game->map.currentRoom[0] * GRID_ROOM_WIDTH) * GRID_CELL_SIZE;
-        int screenY = (attackZone[z][1] - game->map.currentRoom[1] * GRID_ROOM_HEIGHT) * GRID_CELL_SIZE;
+        int screenPos[2];
+        Camera_worldToScreen(&game->map.camera, attackZone[z], screenPos);
 
         int alpha = (z == 0) ? 180 : 100;
         SDL_SetRenderDrawColor(game->render.renderer, 255, 220, 50, alpha);
-        SDL_Rect attackRect = {screenX + 3, screenY + 3, GRID_CELL_SIZE - 6, GRID_CELL_SIZE - 6};
+        SDL_Rect attackRect = {screenPos[0] + 3, screenPos[1] + 3, GRID_CELL_SIZE - 6, GRID_CELL_SIZE - 6};
         SDL_RenderFillRect(game->render.renderer, &attackRect);
 
         SDL_SetRenderDrawColor(game->render.renderer, 255, 150, 0, alpha);
@@ -325,35 +374,23 @@ static void drawAttackEffect(const Game* game) {
     }
 }
 
-/**
- * @brief Dessine les ennemis actifs
- */
 static void drawEnemies(const Game* game) {
     for (int i = 0; i < game->enemyCount; i++) {
         Enemy_draw(&game->enemies[i], game->render.renderer);
     }
 }
 
-/**
- * @brief Dessine Link avec effet de clignotement si invincible
- */
 static void drawPlayer(const Game* game) {
     Link_draw(&game->player, game->render.renderer);
 }
 
-//==============================================================================
-// FONCTIONS PUBLIQUES - CYCLE DE VIE
-//==============================================================================
-
 void Game_init(Game* game) {
-    // --- État initial ---
     game->state = STATE_MENU;
     game->previousState = STATE_MENU;
     game->enemyCount = 0;
     game->running = true;
     resetPlayerStats(game);
 
-    // --- Initialisation SDL ---
     initSDL();
     game->render.window = createWindow(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
     game->render.renderer = createRenderer(game->render.window);
@@ -363,7 +400,8 @@ void Game_init(Game* game) {
         fprintf(stderr, "Erreur chargement police : %s\n", TTF_GetError());
     }
 
-    // --- Initialisation du menu principal ---
+    Audio_init(ASSET_AUDIO_CONFIG);
+    Audio_setMusicTrack(AUDIO_MUSIC_MENU);
     Menu_initMain(&game->menu);
 }
 
@@ -387,43 +425,44 @@ void Game_destroy(Game* game) {
         Enemy_destroy(&game->enemies[i]);
     }
 
-    // --- Libération des ressources SDL ---
     if (game->render.font != NULL) {
         TTF_CloseFont(game->render.font);
     }
+    Audio_shutdown();
     quitSDL(game->render.window, game->render.renderer);
 }
-
-//==============================================================================
-// FONCTIONS PUBLIQUES - GESTION DES ÉTATS
-//==============================================================================
 
 void Game_setState(Game* game, GameState newState) {
     game->previousState = game->state;
     game->state = newState;
 
-    // Initialiser le menu correspondant
     switch (newState) {
         case STATE_MENU:
             Menu_initMain(&game->menu);
+            Audio_updateWalk(false);
+            Audio_setMusicTrack(AUDIO_MUSIC_MENU);
             break;
 
         case STATE_PAUSED:
             Menu_initPause(&game->menu);
+            Audio_updateWalk(false);
+            Audio_setMusicTrack(AUDIO_MUSIC_MENU);
             break;
 
         case STATE_GAMEOVER:
             Menu_initGameOver(&game->menu, game->stats.score);
+            Audio_updateWalk(false);
+            Audio_playSfx(AUDIO_SFX_GAME_OVER);
+            Audio_setMusicTrack(AUDIO_MUSIC_GAMEOVER);
             break;
 
         case STATE_PLAYING:
-            // Pas de menu à initialiser
+            Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
             break;
     }
 }
 
 void Game_startNewGame(Game* game) {
-    // Nettoyer l'ancien état si nécessaire
     if (game->previousState == STATE_PLAYING || game->previousState == STATE_PAUSED ||
         game->previousState == STATE_GAMEOVER) {
         Link_destroy(&game->player);
@@ -434,13 +473,12 @@ void Game_startNewGame(Game* game) {
         game->enemyCount = 0;
     }
 
-    // Réinitialiser
     resetPlayerStats(game);
     initGameplayResources(game);
 
-    // Passer en mode jeu
     game->state = STATE_PLAYING;
     game->previousState = STATE_PLAYING;
+    Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
 }
 
 void Game_pause(Game* game) {
@@ -452,12 +490,9 @@ void Game_pause(Game* game) {
 void Game_resume(Game* game) {
     if (game->state == STATE_PAUSED) {
         game->state = STATE_PLAYING;
+        Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
     }
 }
-
-//==============================================================================
-// FONCTIONS PUBLIQUES - BOUCLE DE JEU
-//==============================================================================
 
 void Game_handleInput(Game* game) {
     switch (game->state) {
@@ -470,56 +505,49 @@ void Game_handleInput(Game* game) {
         }
 
         case STATE_PLAYING: {
-            InputAction input = inputPoll();
-            handlePlayingInput(game, input);
+            InputState inputState;
+            bool quit = false;
+            bool pause = false;
+            inputPollContinuous(&inputState, &quit, &pause);
+            handlePlayingInput(game, &inputState, quit, pause);
             break;
         }
     }
 }
 
 void Game_update(Game* game) {
-    // Ne mettre à jour que si on est en mode jeu
     if (game->state != STATE_PLAYING) {
         return;
     }
 
-    // Sauvegarde de la salle actuelle pour détecter les changements
-    int oldRoom[2] = {game->map.currentRoom[0], game->map.currentRoom[1]};
-
-    // Mise à jour du joueur
     Link_update(&game->player);
-
-    // Gestion de l'attaque
     handleAttack(game);
 
-    // Gestion des transitions de salles
-    Room_handleTransition(&game->map, game->player.base.pos);
+    int playerPos[2];
+    Character_getGridPos(&game->player.base, playerPos);
 
-    // Si changement de salle, spawn de nouveaux ennemis
-    if (oldRoom[0] != game->map.currentRoom[0] || oldRoom[1] != game->map.currentRoom[1]) {
-        spawnEnemiesForRoom(game);
-    }
+    Camera_followF(&game->map.camera, game->player.base.posX, game->player.base.posY);
+    Room_handleTransition(&game->map, playerPos);
 
-    // Mise à jour des ennemis (avec gestion des collisions entre eux)
-    for (int i = 0; i < game->enemyCount; i++) {
-        if (game->enemies[i].isActive) {
-            Enemy_update(&game->enemies[i], game->player.base.pos, game->enemies, game->enemyCount, i);
+    despawnDistantEnemies(game);
+
+    int activeCount = countActiveEnemies(game);
+    if (activeCount < ENEMIES_PER_ZONE) {
+        int toSpawn = ENEMIES_PER_ZONE - activeCount;
+        for (int i = 0; i < toSpawn; i++) {
+            spawnSingleEnemy(game);
         }
     }
 
-    // Vérification des collisions avec les ennemis
-    checkEnemyCollisions(game);
-
-    // Temps de jeu (en frames)
-    game->stats.playtime++;
-
-    // Bonus de score si tous les ennemis sont morts
-    if (countActiveEnemies(game) == 0) {
-        game->stats.score += 50;  // Bonus salle nettoyée
-        spawnEnemiesForRoom(game);  // Respawn
+    for (int i = 0; i < game->enemyCount; i++) {
+        if (game->enemies[i].isActive) {
+            Enemy_update(&game->enemies[i], playerPos, game->enemies, game->enemyCount, i);
+        }
     }
 
-    // Vérification game over
+    checkEnemyCollisions(game);
+    game->stats.playtime++;
+
     if (game->player.base.lives <= 0) {
         Game_setState(game, STATE_GAMEOVER);
     }
@@ -533,45 +561,32 @@ void Game_render(Game* game) {
             break;
 
         case STATE_PAUSED: {
-            // Afficher le jeu en arrière-plan (assombri)
             SDL_SetRenderDrawColor(game->render.renderer, 0, 0, 0, 255);
             clearRenderer(game->render.renderer);
             Map_draw(&game->map, false);
             drawEnemies(game);
             drawPlayer(game);
 
-            // Overlay semi-transparent
             SDL_SetRenderDrawBlendMode(game->render.renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(game->render.renderer, 0, 0, 0, 180);
             SDL_Rect overlay = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
             SDL_RenderFillRect(game->render.renderer, &overlay);
 
-            // Menu pause par-dessus
             Menu_render(&game->menu, &game->render);
             break;
         }
 
         case STATE_PLAYING:
-            // --- Effacement de l'écran ---
             SDL_SetRenderDrawColor(game->render.renderer, 0, 0, 0, 255);
             clearRenderer(game->render.renderer);
 
-            // --- Carte ---
             Map_draw(&game->map, false);
-
-            // --- Effet d'attaque ---
             drawAttackEffect(game);
-
-            // --- Ennemis ---
             drawEnemies(game);
-
-            // --- Joueur ---
             drawPlayer(game);
 
-            // --- HUD ---
             HUD_render(&game->render, &game->stats, game->player.base.lives, game->map.currentRoom);
 
-            // --- Affichage ---
             updateDisplay(game->render.renderer);
             break;
     }

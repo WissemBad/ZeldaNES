@@ -1,18 +1,13 @@
-/**
- * @file iomanager.c
- * @brief Gestion des entrées clavier
- */
-
 #include "iomanager.h"
 
 static InputAction keyToAction(SDL_Keycode key) {
     switch (key) {
         case SDLK_UP:
-        case SDLK_z:        return INPUT_ACTION_MOVE_UP;
+        case SDLK_w:        return INPUT_ACTION_MOVE_UP;
         case SDLK_DOWN:
         case SDLK_s:        return INPUT_ACTION_MOVE_DOWN;
         case SDLK_LEFT:
-        case SDLK_q:        return INPUT_ACTION_MOVE_LEFT;
+        case SDLK_a:        return INPUT_ACTION_MOVE_LEFT;
         case SDLK_RIGHT:
         case SDLK_d:        return INPUT_ACTION_MOVE_RIGHT;
         case SDLK_ESCAPE:
@@ -39,5 +34,41 @@ InputAction inputPoll(void) {
     }
 
     return INPUT_ACTION_NONE;
+}
+
+void inputPollContinuous(InputState* state, bool* quit, bool* pause) {
+    if (!state || !quit || !pause) return;
+
+    state->moveUp = false;
+    state->moveDown = false;
+    state->moveLeft = false;
+    state->moveRight = false;
+    state->attack = false;
+    state->interact = false;
+    *quit = false;
+    *pause = false;
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            *quit = true;
+            return;
+        }
+
+        if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+            if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_p) {
+                *pause = true;
+            }
+        }
+    }
+
+    const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+
+    state->moveUp = keyboardState[SDL_SCANCODE_UP] || keyboardState[SDL_SCANCODE_W];
+    state->moveDown = keyboardState[SDL_SCANCODE_DOWN] || keyboardState[SDL_SCANCODE_S];
+    state->moveLeft = keyboardState[SDL_SCANCODE_LEFT] || keyboardState[SDL_SCANCODE_A];
+    state->moveRight = keyboardState[SDL_SCANCODE_RIGHT] || keyboardState[SDL_SCANCODE_D];
+    state->attack = keyboardState[SDL_SCANCODE_F];
+    state->interact = keyboardState[SDL_SCANCODE_E];
 }
 

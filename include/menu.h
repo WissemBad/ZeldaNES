@@ -1,8 +1,3 @@
-/**
- * @file menu.h
- * @brief Système de menus (principal, pause, game over)
- */
-
 #ifndef NUPRC_MENU_H
 #define NUPRC_MENU_H
 
