@@ -1,13 +1,4 @@
-/**
- * @file render.c
- * @brief Implémentation des fonctions de rendu SDL
- */
-
 #include "render.h"
-
-//==============================================================================
-// FONCTIONS - INITIALISATION SDL
-//==============================================================================
 
 void initSDL(void) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -66,10 +57,6 @@ void quitSDL(SDL_Window* window, SDL_Renderer* renderer) {
     SDL_Quit();
 }
 
-//==============================================================================
-// FONCTIONS - RENDU DE BASE
-//==============================================================================
-
 void updateDisplay(SDL_Renderer* renderer) {
     SDL_RenderPresent(renderer);
 }
@@ -101,10 +88,6 @@ void renderTexture(SDL_Texture* texture, SDL_Renderer* renderer,
     SDL_RenderCopy(renderer, texture, NULL, &dst);
 }
 
-//==============================================================================
-// FONCTIONS - CARTE
-//==============================================================================
-
 SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer) {
     SDL_Surface* atlas = SDL_LoadBMP(tileFilename);
     if (atlas == NULL) {
@@ -122,7 +105,7 @@ SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer)
     int index = 0;
     for (int row = 0; row < MAP_TILES_HEIGHT; row++) {
         for (int col = 0; col < MAP_TILES_WIDTH; col++) {
-            // Créer une surface pour cette tuile
+
             SDL_Surface* tileSurface = SDL_CreateRGBSurface(
                 0, MAP_TILE_SIZE, MAP_TILE_SIZE, 32, 0, 0, 0, 0
             );
@@ -133,7 +116,6 @@ SDL_Texture** loadTileTextures(const char* tileFilename, SDL_Renderer* renderer)
                 continue;
             }
 
-            // Calculer la position dans l'atlas (1px de marge entre les tuiles)
             SDL_Rect srcRect = {
                 .x = col * (MAP_TILE_SIZE + 1) + 1,
                 .y = row * (MAP_TILE_SIZE + 1) + 1,
@@ -208,10 +190,6 @@ void loadBlockingMap(const char* filePath, char blockingMap[GRID_WORLD_HEIGHT][G
     fclose(file);
 }
 
-//==============================================================================
-// FONCTIONS - TEXTE
-//==============================================================================
-
 void printText(const int x, const int y, const char* text,
                const int width, const int height, SDL_Renderer* renderer) {
     TTF_Font* font = TTF_OpenFont(WINDOW_FONT_PATH, WINDOW_FONT_SIZE);
@@ -260,12 +238,8 @@ void printTextWithFont(int x, int y, const char* text,
     SDL_FreeSurface(surface);
 }
 
-//==============================================================================
-// FONCTIONS - AUDIO
-//==============================================================================
-
 void playMusic(const char* filePath) {
-    // Éviter une réinitialisation si SDL est déjà initialisé
+
     if (SDL_WasInit(SDL_INIT_AUDIO) == 0) {
         if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
             fprintf(stderr, "Erreur init SDL audio : %s\n", SDL_GetError());
@@ -297,8 +271,6 @@ void playMusic(const char* filePath) {
         fprintf(stderr, "Erreur lecture musique : %s\n", Mix_GetError());
     }
 
-    // Attendre la fin de la lecture (non-bloquant dans le jeu réel; ici simple cleanup)
-    // Dans le moteur réel, gérer via une boucle ou callbacks.
     while (Mix_PlayingMusic()) {
         SDL_Delay(10);
     }

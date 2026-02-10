@@ -1,8 +1,3 @@
-/**
- * @file map.h
- * @brief Gestion de la carte du monde et des salles
- */
-
 #ifndef NUPRC_MAP_H
 #define NUPRC_MAP_H
 
@@ -34,9 +29,10 @@ void Map_destroy(Map* map);
 bool Map_isBlocking(const Map* map, const int pos[2]);
 Room* Map_getRoom(Map* map, const int pos[2]);
 
-/* Caméra open world */
 void Camera_init(Camera* cam);
+void Camera_followF(Camera* cam, float playerX, float playerY);
 void Camera_follow(Camera* cam, const int playerPos[2]);
+void Camera_worldToScreenF(const Camera* cam, float worldX, float worldY, int screenPos[2]);
 void Camera_worldToScreen(const Camera* cam, const int worldPos[2], int screenPos[2]);
 
 void Room_getCenter(const Room* room, int center[2]);

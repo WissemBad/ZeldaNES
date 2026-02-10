@@ -1,8 +1,3 @@
-/**
- * @file menu.c
- * @brief Système de menus
- */
-
 #include "menu.h"
 #include "render.h"
 #include "iomanager.h"
@@ -21,19 +16,17 @@ static void addOption(Menu* menu, const char* label, MenuAction action, bool ena
 
 static void drawStyledRect(SDL_Renderer* renderer, int x, int y, int w, int h,
                            SDL_Color fillColor, SDL_Color borderColor, bool selected) {
-    // Bordure extérieure (effet de sélection)
+
     if (selected) {
         SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
         SDL_Rect border = {x - 2, y - 2, w + 4, h + 4};
         SDL_RenderFillRect(renderer, &border);
     }
 
-    // Rectangle principal
     SDL_SetRenderDrawColor(renderer, fillColor.r, fillColor.g, fillColor.b, fillColor.a);
     SDL_Rect rect = {x, y, w, h};
     SDL_RenderFillRect(renderer, &rect);
 
-    // Ligne de surbrillance en haut (effet 3D)
     if (selected) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 60);
         SDL_RenderDrawLine(renderer, x + 2, y + 2, x + w - 2, y + 2);
@@ -43,7 +36,6 @@ static void drawStyledRect(SDL_Renderer* renderer, int x, int y, int w, int h,
 static void drawTitle(SDL_Renderer* renderer, TTF_Font* font, const char* title, int centerX, int y) {
     if (!font || !title) return;
 
-    // Ombre du titre
     SDL_Color shadowColor = {0, 0, 0, 200};
     SDL_Surface* shadowSurface = TTF_RenderText_Solid(font, title, shadowColor);
     if (shadowSurface) {
@@ -57,7 +49,6 @@ static void drawTitle(SDL_Renderer* renderer, TTF_Font* font, const char* title,
         SDL_FreeSurface(shadowSurface);
     }
 
-    // Titre principal
     SDL_Color titleColor = {MENU_TEXT_R, MENU_TEXT_G, MENU_TEXT_B, MENU_TEXT_A};
     SDL_Surface* surface = TTF_RenderText_Solid(font, title, titleColor);
     if (surface) {
@@ -72,18 +63,16 @@ static void drawTitle(SDL_Renderer* renderer, TTF_Font* font, const char* title,
 }
 
 static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
-    // Fond principal
+
     SDL_SetRenderDrawColor(renderer, MENU_BG_R, MENU_BG_G, MENU_BG_B, MENU_BG_A);
     SDL_RenderClear(renderer);
 
-    // Effet de lignes décoratives
     SDL_SetRenderDrawColor(renderer, 40, 40, 50, 255);
     for (int i = 0; i < WINDOW_HEIGHT; i += 4) {
         SDL_RenderDrawLine(renderer, 0, i, WINDOW_WIDTH, i);
     }
 
-    // Bordure décorative selon le type de menu
-    SDL_Color borderColor = {100, 150, 255, 255};  // Défaut: bleu
+    SDL_Color borderColor = {100, 150, 255, 255};
     switch (type) {
         case MENU_TYPE_MAIN:
             borderColor = (SDL_Color){100, 150, 255, 255};
@@ -98,11 +87,9 @@ static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
 
     SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
 
-    // Lignes décoratives horizontales
     SDL_RenderDrawLine(renderer, 50, 50, WINDOW_WIDTH - 50, 50);
     SDL_RenderDrawLine(renderer, 50, WINDOW_HEIGHT - 50, WINDOW_WIDTH - 50, WINDOW_HEIGHT - 50);
 
-    // Petits carrés aux coins
     SDL_Rect cornerTL = {45, 45, 10, 10};
     SDL_Rect cornerTR = {WINDOW_WIDTH - 55, 45, 10, 10};
     SDL_Rect cornerBL = {45, WINDOW_HEIGHT - 55, 10, 10};
@@ -112,7 +99,6 @@ static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
     SDL_RenderFillRect(renderer, &cornerBL);
     SDL_RenderFillRect(renderer, &cornerBR);
 }
-
 
 void Menu_initMain(Menu* menu) {
     memset(menu, 0, sizeof(Menu));
@@ -212,14 +198,11 @@ MenuAction Menu_handleInput(Menu* menu) {
 void Menu_render(const Menu* menu, const RenderState* render) {
     if (!menu || !render || !render->renderer) return;
 
-    // --- Fond stylisé ---
     drawMenuBackground(render->renderer, menu->type);
 
-    // --- Titre ---
     int titleY = 80;
     drawTitle(render->renderer, render->font, menu->title, WINDOW_WIDTH / 2, titleY);
 
-    // --- Sous-titre ---
     if (strlen(menu->subtitle) > 0 && render->font) {
         SDL_Color subtitleColor = {180, 180, 180, 255};
         SDL_Surface* surface = TTF_RenderText_Solid(render->font, menu->subtitle, subtitleColor);
@@ -235,7 +218,6 @@ void Menu_render(const Menu* menu, const RenderState* render) {
         }
     }
 
-    // --- Options du menu ---
     int menuStartY = WINDOW_HEIGHT / 2 - (menu->optionCount * (MENU_BUTTON_HEIGHT + MENU_BUTTON_SPACING)) / 2;
     int buttonX = WINDOW_WIDTH / 2 - MENU_BUTTON_WIDTH / 2;
 
@@ -244,7 +226,6 @@ void Menu_render(const Menu* menu, const RenderState* render) {
         int buttonY = menuStartY + i * (MENU_BUTTON_HEIGHT + MENU_BUTTON_SPACING);
         bool isSelected = (i == menu->selectedIndex);
 
-        // Couleurs selon l'état
         SDL_Color fillColor, borderColor, textColor;
 
         if (!opt->enabled) {
@@ -261,11 +242,9 @@ void Menu_render(const Menu* menu, const RenderState* render) {
             textColor = (SDL_Color){200, 200, 200, 255};
         }
 
-        // Dessiner le bouton
         drawStyledRect(render->renderer, buttonX, buttonY, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT,
                        fillColor, borderColor, isSelected);
 
-        // Texte du bouton
         if (render->font) {
             SDL_Surface* surface = TTF_RenderText_Solid(render->font, opt->label, textColor);
             if (surface) {
@@ -283,13 +262,11 @@ void Menu_render(const Menu* menu, const RenderState* render) {
             }
         }
 
-        // Indicateur de sélection (flèche)
         if (isSelected) {
             SDL_SetRenderDrawColor(render->renderer, 255, 255, 255, 255);
             int arrowX = buttonX - 20;
             int arrowY = buttonY + MENU_BUTTON_HEIGHT / 2;
 
-            // Triangle simple (flèche)
             for (int j = 0; j < 8; j++) {
                 SDL_RenderDrawLine(render->renderer, arrowX, arrowY - j, arrowX, arrowY + j);
                 arrowX++;
@@ -297,7 +274,6 @@ void Menu_render(const Menu* menu, const RenderState* render) {
         }
     }
 
-    // --- Instructions en bas ---
     if (render->font) {
         const char* instructions = "[Haut/Bas] Naviguer   [Entree/Espace] Valider";
         SDL_Color instrColor = {120, 120, 120, 255};
@@ -314,6 +290,5 @@ void Menu_render(const Menu* menu, const RenderState* render) {
         }
     }
 
-    // --- Affichage ---
     SDL_RenderPresent(render->renderer);
 }

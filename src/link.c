@@ -1,16 +1,7 @@
-/**
- * @file link.c
- * @brief Gestion du personnage jouable
- */
-
 #include "link.h"
 #include "map.h"
 #include "render.h"
 #include "utils.h"
-
-//==============================================================================
-// FONCTIONS PRIVÉES
-//==============================================================================
 
 static AnimDirection toAnimDir(LinkDirection dir) {
     switch (dir) {
@@ -20,10 +11,6 @@ static AnimDirection toAnimDir(LinkDirection dir) {
         default:             return ANIM_DIR_DOWN;
     }
 }
-
-//==============================================================================
-// FONCTIONS PUBLIQUES
-//==============================================================================
 
 void Link_init(Link* link, Map* map) {
     if (!link || !map) return;
@@ -122,15 +109,8 @@ void Link_moveSmooth(Link* link, float deltaX, float deltaY) {
     if (!link) return;
     if (deltaX == 0.0f && deltaY == 0.0f) return;
 
-    int gridPos[2];
-    Character_getGridPos(&link->base, gridPos);
-    int oldPos[2] = {gridPos[0], gridPos[1]};
-
     Character_moveSmooth(&link->base, deltaX, deltaY);
 
-    Character_getGridPos(&link->base, gridPos);
-
-    // Mise à jour de la direction en fonction du mouvement
     if (deltaX > 0) link->direction = LINK_DIR_RIGHT;
     else if (deltaX < 0) link->direction = LINK_DIR_LEFT;
     else if (deltaY > 0) link->direction = LINK_DIR_DOWN;
@@ -139,7 +119,6 @@ void Link_moveSmooth(Link* link, float deltaX, float deltaY) {
     AnimDirection animDir = toAnimDir(link->direction);
     Animation_setDirection(&link->animation, animDir);
 
-    // Démarre l'animation de marche si le personnage a bougé
     if (deltaX != 0.0f || deltaY != 0.0f) {
         Animation_startWalk(&link->animation, animDir);
     }
@@ -152,11 +131,8 @@ void Link_draw(const Link* link, SDL_Renderer* renderer) {
     SDL_Texture* tex = Animation_getCurrentTexture(&link->animation, &link->sprites);
     if (!tex) return;
 
-    int gridPos[2];
-    Character_getGridPos(&link->base, gridPos);
-
     int screen[2];
-    Camera_worldToScreen(&link->base.map->camera, gridPos, screen);
+    Camera_worldToScreenF(&link->base.map->camera, link->base.posX, link->base.posY, screen);
     renderTexture(tex, renderer, screen[0], screen[1], GRID_CELL_SIZE, GRID_CELL_SIZE);
 }
 

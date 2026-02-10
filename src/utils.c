@@ -1,8 +1,3 @@
-/**
- * @file utils.c
- * @brief Fonctions utilitaires
- */
-
 #include "utils.h"
 
 void worldToScreen(const int worldPos[2], int screenPos[2], const int roomPos[2]) {

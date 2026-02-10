@@ -1,8 +1,3 @@
-/**
- * @file utils.h
- * @brief Fonctions utilitaires (coordonnées, mathématiques)
- */
-
 #ifndef NUPRC_UTILS_H
 #define NUPRC_UTILS_H
 

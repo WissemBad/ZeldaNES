@@ -1,11 +1,63 @@
-/**
- * @file character.c
- * @brief Implémentation des personnages
- */
-
 #include "character.h"
 #include "render.h"
-#include "utils.h"
+
+static float absf(float value) {
+    return value < 0.0f ? -value : value;
+}
+
+static int floorToInt(float value) {
+    const int truncated = (int)value;
+    return value < (float)truncated ? truncated - 1 : truncated;
+}
+
+static int roundToGrid(float value) {
+    return (int)(value + (value >= 0.0f ? 0.5f : -0.5f));
+}
+
+static bool isBlockingAt(Map* map, float x, float y) {
+    int pos[2] = {floorToInt(x), floorToInt(y)};
+    return Map_isBlocking(map, pos);
+}
+
+static bool isRectBlocking(Map* map, float x, float y) {
+    const float margin = 0.08f;
+    const float left = x + margin;
+    const float right = x + 1.0f - margin;
+    const float top = y + margin;
+    const float bottom = y + 1.0f - margin;
+    return isBlockingAt(map, left, top) ||
+           isBlockingAt(map, right, top) ||
+           isBlockingAt(map, left, bottom) ||
+           isBlockingAt(map, right, bottom);
+}
+
+static void moveOnAxis(Character* c, float delta, bool horizontal) {
+    if (delta == 0.0f) return;
+
+    const float maxStep = 0.02f;
+    float remaining = delta;
+    const int maxIterations = 128;
+
+    for (int i = 0; i < maxIterations && absf(remaining) > 0.0001f; i++) {
+        float step = remaining;
+        if (step > maxStep) step = maxStep;
+        if (step < -maxStep) step = -maxStep;
+
+        const float nextX = horizontal ? c->posX + step : c->posX;
+        const float nextY = horizontal ? c->posY : c->posY + step;
+
+        if (isRectBlocking(c->map, nextX, nextY)) {
+            break;
+        }
+
+        if (horizontal) {
+            c->posX = nextX;
+        } else {
+            c->posY = nextY;
+        }
+        remaining -= step;
+    }
+}
 
 void Character_init(Character* c, CharacterType type, int lives, Map* map) {
     if (!c) return;
@@ -19,24 +71,15 @@ void Character_init(Character* c, CharacterType type, int lives, Map* map) {
 
 void Character_getGridPos(const Character* c, int gridPos[2]) {
     if (!c || !gridPos) return;
-    gridPos[0] = (int)(c->posX + 0.5f);  // Arrondi à l'entier le plus proche
-    gridPos[1] = (int)(c->posY + 0.5f);
+    gridPos[0] = roundToGrid(c->posX);
+    gridPos[1] = roundToGrid(c->posY);
 }
 
 void Character_moveSmooth(Character* c, float deltaX, float deltaY) {
     if (!c || !c->map) return;
 
-    // Calcule la nouvelle position
-    float newX = c->posX + deltaX;
-    float newY = c->posY + deltaY;
-
-    // Vérifie les collisions sur la position arrondie
-    int gridPos[2] = {(int)(newX + 0.5f), (int)(newY + 0.5f)};
-
-    if (!Map_isBlocking(c->map, gridPos)) {
-        c->posX = newX;
-        c->posY = newY;
-    }
+    moveOnAxis(c, deltaX, true);
+    moveOnAxis(c, deltaY, false);
 }
 
 void Character_move(Character* c, const int delta[2]) {
@@ -53,13 +96,10 @@ void Character_move(Character* c, const int delta[2]) {
 }
 
 void Character_draw(const Character* c, SDL_Renderer* renderer) {
-    if (!c || !c->texture || !renderer) return;
-
-    int gridPos[2];
-    Character_getGridPos(c, gridPos);
+    if (!c || !c->texture || !renderer || !c->map) return;
 
     int screenPos[2];
-    worldToScreen(gridPos, screenPos, c->map->currentRoom);
+    Camera_worldToScreenF(&c->map->camera, c->posX, c->posY, screenPos);
     renderTexture(c->texture, renderer, screenPos[0], screenPos[1],
                   GRID_CELL_SIZE, GRID_CELL_SIZE);
 }

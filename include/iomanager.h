@@ -1,8 +1,3 @@
-/**
- * @file iomanager.h
- * @brief Gestion des entrées utilisateur (clavier)
- */
-
 #ifndef NUPRC_IOMANAGER_H
 #define NUPRC_IOMANAGER_H
 
