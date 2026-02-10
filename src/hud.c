@@ -1,33 +1,14 @@
-/**
- * @file hud.c
- * @brief Implémentation de l'affichage du HUD
- */
-
 #include "hud.h"
 #include "render.h"
 #include <string.h>
 
-//==============================================================================
-// VARIABLES STATIQUES (pour les messages temporaires)
-//==============================================================================
-
 static char s_messageBuffer[128] = "";
 static int  s_messageTimer = 0;
 
-//==============================================================================
-// FONCTIONS PRIVÉES
-//==============================================================================
-
-/**
- * @brief Calcule la position Y du début de la zone HUD
- */
 static int getHudYPosition(void) {
     return WINDOW_HEIGHT - WINDOW_TEXTAREA_HEIGHT;
 }
 
-/**
- * @brief Affiche le fond du HUD (rectangle coloré)
- */
 static void renderHudBackground(SDL_Renderer* renderer, const SDL_Color* bgColor) {
     const int hudY = getHudYPosition();
     SDL_Rect hudBackground = {0, hudY, WINDOW_WIDTH, WINDOW_TEXTAREA_HEIGHT};
@@ -35,9 +16,6 @@ static void renderHudBackground(SDL_Renderer* renderer, const SDL_Color* bgColor
     SDL_RenderFillRect(renderer, &hudBackground);
 }
 
-/**
- * @brief Affiche la ligne de séparation entre le jeu et le HUD
- */
 static void renderHudSeparator(SDL_Renderer* renderer, const SDL_Color* separatorColor) {
     const int hudY = getHudYPosition();
     SDL_SetRenderDrawColor(renderer, separatorColor->r, separatorColor->g,
@@ -45,28 +23,21 @@ static void renderHudSeparator(SDL_Renderer* renderer, const SDL_Color* separato
     SDL_RenderDrawLine(renderer, 0, hudY, WINDOW_WIDTH, hudY);
 }
 
-/**
- * @brief Dessine une touche stylisée (petit carré avec lettre)
- */
 static void drawKey(SDL_Renderer* renderer, TTF_Font* font, int x, int y,
                     const char* key, bool highlight) {
     const int keySize = 22;
 
-    // Fond de la touche
     SDL_Color bgColor = highlight ? (SDL_Color){100, 150, 255, 255} : (SDL_Color){60, 60, 70, 255};
     SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     SDL_Rect keyRect = {x, y, keySize, keySize};
     SDL_RenderFillRect(renderer, &keyRect);
 
-    // Bordure
     SDL_SetRenderDrawColor(renderer, 120, 120, 130, 255);
     SDL_RenderDrawRect(renderer, &keyRect);
 
-    // Effet 3D (ligne claire en haut)
     SDL_SetRenderDrawColor(renderer, 90, 90, 100, 255);
     SDL_RenderDrawLine(renderer, x + 1, y + 1, x + keySize - 2, y + 1);
 
-    // Texte de la touche
     if (font && key) {
         SDL_Color textColor = {255, 255, 255, 255};
         SDL_Surface* surface = TTF_RenderText_Solid(font, key, textColor);
@@ -86,28 +57,21 @@ static void drawKey(SDL_Renderer* renderer, TTF_Font* font, int x, int y,
     }
 }
 
-/**
- * @brief Dessine les contrôles en disposition pyramidale
- */
 static void drawControls(SDL_Renderer* renderer, TTF_Font* font, int startX, int startY) {
     const int keySize = 22;
     const int spacing = 2;
 
-    // Ligne 1: Flèche haut (centrée)
     drawKey(renderer, font, startX + keySize + spacing, startY, "^", false);
 
-    // Ligne 2: Gauche, Bas, Droite
     int row2Y = startY + keySize + spacing;
     drawKey(renderer, font, startX, row2Y, "<", false);
     drawKey(renderer, font, startX + keySize + spacing, row2Y, "v", false);
     drawKey(renderer, font, startX + (keySize + spacing) * 2, row2Y, ">", false);
 
-    // Ligne 3: Attaque (F) et Pause (P) à côté
     int row3Y = startY + (keySize + spacing) * 2 + 5;
     drawKey(renderer, font, startX, row3Y, "F", false);
     drawKey(renderer, font, startX + keySize + spacing + 5, row3Y, "P", false);
 
-    // Labels
     SDL_Color labelColor = {150, 150, 150, 255};
     if (font) {
         SDL_Surface* surface = TTF_RenderText_Solid(font, "ATK", labelColor);
@@ -122,10 +86,6 @@ static void drawControls(SDL_Renderer* renderer, TTF_Font* font, int startX, int
         }
     }
 }
-
-//==============================================================================
-// FONCTIONS PUBLIQUES
-//==============================================================================
 
 void HUD_initConfig(HUDConfig* config) {
     if (!config) return;
@@ -152,16 +112,12 @@ void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
     const int hudY = getHudYPosition();
     const int lineSpacing = config->lineSpacing;
 
-    // Fond du HUD
     renderHudBackground(render->renderer, &config->backgroundColor);
 
-    // Ligne de séparation
     renderHudSeparator(render->renderer, &config->separatorColor);
 
-    // Textes d'information
     char buffer[64];
 
-    // Dessiner des coeurs pour les vies
     for (int i = 0; i < GAME_INITIAL_LIVES; i++) {
         int heartX = HUD_MARGIN_LEFT + i * 25;
         int heartY = hudY + HUD_MARGIN_TOP;
@@ -172,13 +128,11 @@ void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
             SDL_SetRenderDrawColor(render->renderer, 80, 80, 80, 255);
         }
 
-        // Dessiner un coeur simplifié (deux carrés + triangle)
         SDL_Rect heart1 = {heartX, heartY + 3, 8, 8};
         SDL_Rect heart2 = {heartX + 8, heartY + 3, 8, 8};
         SDL_RenderFillRect(render->renderer, &heart1);
         SDL_RenderFillRect(render->renderer, &heart2);
 
-        // Partie basse du coeur
         for (int j = 0; j < 8; j++) {
             SDL_RenderDrawLine(render->renderer,
                 heartX + j, heartY + 11 + j / 2,
@@ -189,7 +143,6 @@ void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
     snprintf(buffer, sizeof(buffer), "Score : %d", stats->score);
     printTextWithFont(HUD_MARGIN_LEFT, hudY + HUD_MARGIN_TOP + lineSpacing, buffer, render->font, render->renderer);
 
-    // Colonne 2 - Kills et Temps
     snprintf(buffer, sizeof(buffer), "Kills : %d", stats->kills);
     printTextWithFont(HUD_COLUMN_2_X, hudY + HUD_MARGIN_TOP, buffer, render->font, render->renderer);
 
@@ -197,14 +150,12 @@ void HUD_renderWithConfig(const RenderState* render, const PlayerStats* stats,
     snprintf(buffer, sizeof(buffer), "Temps : %02d:%02d", seconds / 60, seconds % 60);
     printTextWithFont(HUD_COLUMN_2_X, hudY + HUD_MARGIN_TOP + lineSpacing, buffer, render->font, render->renderer);
 
-    // Colonne 3 - Salle et Mouvements
     snprintf(buffer, sizeof(buffer), "Salle : [%d, %d]", currentRoom[0], currentRoom[1]);
     printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP, buffer, render->font, render->renderer);
 
     snprintf(buffer, sizeof(buffer), "Moves : %d", stats->moves);
     printTextWithFont(HUD_COLUMN_3_X, hudY + HUD_MARGIN_TOP + lineSpacing, buffer, render->font, render->renderer);
 
-    // Colonne 4 - Contrôles (disposition pyramidale)
     drawControls(render->renderer, render->font, HUD_CONTROLS_X, hudY + HUD_MARGIN_TOP);
 }
 
@@ -214,18 +165,16 @@ void HUD_renderDebugInfo(const RenderState* render, int fps, int entityCount) {
     const int hudY = getHudYPosition();
     char buffer[64];
 
-    // Afficher les FPS
     snprintf(buffer, sizeof(buffer), "FPS: %d", fps);
     printTextWithFont(WINDOW_WIDTH - 100, hudY + HUD_MARGIN_TOP, buffer, render->font, render->renderer);
 
-    // Afficher le nombre d'entités
     snprintf(buffer, sizeof(buffer), "Entites: %d", entityCount);
     printTextWithFont(WINDOW_WIDTH - 100, hudY + HUD_MARGIN_TOP + HUD_LINE_SPACING,
                      buffer, render->font, render->renderer);
 }
 
 void HUD_showMessage(const RenderState* render, const char* message, int duration) {
-    (void)render;  // Paramètre réservé pour usage futur
+    (void)render;
     if (!message) return;
 
     strncpy(s_messageBuffer, message, sizeof(s_messageBuffer) - 1);
@@ -237,38 +186,32 @@ void HUD_renderHealthBar(const RenderState* render, int x, int y,
                          int currentLives, int maxLives, int width, int height) {
     if (!render || maxLives <= 0) return;
 
-    // Limiter les vies courantes au maximum
     if (currentLives > maxLives) currentLives = maxLives;
     if (currentLives < 0) currentLives = 0;
 
-    // Calculer la largeur de la barre de vie remplie
     const int filledWidth = (width * currentLives) / maxLives;
 
-    // Fond de la barre (rouge sombre)
     SDL_Rect backgroundRect = {x, y, width, height};
     SDL_SetRenderDrawColor(render->renderer, 80, 0, 0, 255);
     SDL_RenderFillRect(render->renderer, &backgroundRect);
 
-    // Partie remplie de la barre (vert ou rouge selon la vie restante)
     if (filledWidth > 0) {
         SDL_Rect filledRect = {x, y, filledWidth, height};
 
-        // Changer la couleur selon le pourcentage de vie
         if (currentLives > maxLives / 2) {
-            // Plus de 50% : vert
+
             SDL_SetRenderDrawColor(render->renderer, 0, 200, 0, 255);
         } else if (currentLives > maxLives / 4) {
-            // Entre 25% et 50% : orange
+
             SDL_SetRenderDrawColor(render->renderer, 255, 165, 0, 255);
         } else {
-            // Moins de 25% : rouge
+
             SDL_SetRenderDrawColor(render->renderer, 200, 0, 0, 255);
         }
 
         SDL_RenderFillRect(render->renderer, &filledRect);
     }
 
-    // Bordure de la barre (blanc)
     SDL_Rect borderRect = {x, y, width, height};
     SDL_SetRenderDrawColor(render->renderer, 255, 255, 255, 255);
     SDL_RenderDrawRect(render->renderer, &borderRect);

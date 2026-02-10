@@ -1,8 +1,3 @@
-/**
- * @file enemy.h
- * @brief Gestion des ennemis et de leur IA
- */
-
 #ifndef NUPRC_ENEMY_H
 #define NUPRC_ENEMY_H
 

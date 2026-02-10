@@ -1,8 +1,3 @@
-/**
- * @file animation.h
- * @brief Système d'animation des sprites
- */
-
 #ifndef NUPRC_ANIMATION_H
 #define NUPRC_ANIMATION_H
 

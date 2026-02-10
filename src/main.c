@@ -1,8 +1,3 @@
-/**
- * @file main.c
- * @brief Point d'entrée du jeu NUPRC
- */
-
 #include "game.h"
 
 int main(int argc, char* argv[]) {
