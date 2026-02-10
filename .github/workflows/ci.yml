@@ -19,6 +19,9 @@ jobs:
             shell: msys2 {0}
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
 
     steps:
       - uses: actions/checkout@v4
@@ -27,13 +30,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake \
-            pkg-config \
-            libsdl2-dev \
-            libsdl2-ttf-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev
+          sudo apt-get install -y cmake pkg-config \
+            libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-mixer-dev
 
       - name: Setup dependencies (macOS)
         if: matrix.os == 'macos-latest'
@@ -59,14 +57,12 @@ jobs:
 
       - name: Configure + Build (Unix)
         if: matrix.os != 'windows-latest'
-        shell: bash
         run: |
-          cmake -S . -B build
-          cmake --build build --config Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
 
       - name: Configure + Build (Windows/MSYS2)
         if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
         run: |
-          cmake -S . -B build -G Ninja
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
