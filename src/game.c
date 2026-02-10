@@ -416,7 +416,8 @@ void Game_run(Game* game) {
 
 void Game_destroy(Game* game) {
     if (game->previousState == STATE_PLAYING || game->previousState == STATE_PAUSED ||
-        game->state == STATE_PLAYING || game->state == STATE_PAUSED || game->state == STATE_GAMEOVER) {
+        game->state == STATE_PLAYING || game->state == STATE_PAUSED ||
+        game->state == STATE_GAMEOVER || game->state == STATE_WIN) {
         Link_destroy(&game->player);
         Map_destroy(&game->map);
     }
@@ -456,6 +457,12 @@ void Game_setState(Game* game, GameState newState) {
             Audio_setMusicTrack(AUDIO_MUSIC_GAMEOVER);
             break;
 
+        case STATE_WIN:
+            Menu_initWin(&game->menu, game->stats.score, GAME_WIN_KILLS);
+            Audio_updateWalk(false);
+            Audio_setMusicTrack(AUDIO_MUSIC_GAMEOVER);
+            break;
+
         case STATE_PLAYING:
             Audio_setMusicTrack(AUDIO_MUSIC_GAMEPLAY);
             break;
@@ -464,7 +471,7 @@ void Game_setState(Game* game, GameState newState) {
 
 void Game_startNewGame(Game* game) {
     if (game->previousState == STATE_PLAYING || game->previousState == STATE_PAUSED ||
-        game->previousState == STATE_GAMEOVER) {
+        game->previousState == STATE_GAMEOVER || game->previousState == STATE_WIN) {
         Link_destroy(&game->player);
         Map_destroy(&game->map);
         for (int i = 0; i < game->enemyCount; i++) {
@@ -498,7 +505,8 @@ void Game_handleInput(Game* game) {
     switch (game->state) {
         case STATE_MENU:
         case STATE_PAUSED:
-        case STATE_GAMEOVER: {
+        case STATE_GAMEOVER:
+        case STATE_WIN: {
             MenuAction action = Menu_handleInput(&game->menu);
             handleMenuAction(game, action);
             break;
@@ -550,6 +558,8 @@ void Game_update(Game* game) {
 
     if (game->player.base.lives <= 0) {
         Game_setState(game, STATE_GAMEOVER);
+    } else if (game->stats.kills >= GAME_WIN_KILLS) {
+        Game_setState(game, STATE_WIN);
     }
 }
 
@@ -557,6 +567,7 @@ void Game_render(Game* game) {
     switch (game->state) {
         case STATE_MENU:
         case STATE_GAMEOVER:
+        case STATE_WIN:
             Menu_render(&game->menu, &game->render);
             break;
 

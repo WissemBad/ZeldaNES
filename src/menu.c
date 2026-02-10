@@ -84,6 +84,9 @@ static void drawMenuBackground(SDL_Renderer* renderer, MenuType type) {
         case MENU_TYPE_GAMEOVER:
             borderColor = (SDL_Color){255, 80, 80, 255};
             break;
+        case MENU_TYPE_WIN:
+            borderColor = (SDL_Color){90, 210, 120, 255};
+            break;
     }
 
     SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
@@ -132,6 +135,19 @@ void Menu_initGameOver(Menu* menu, int finalScore) {
     menu->selectedIndex = 0;
 
     addOption(menu, "Recommencer", MENU_ACTION_RESTART, true);
+    addOption(menu, "Menu Principal", MENU_ACTION_QUIT, true);
+}
+
+void Menu_initWin(Menu* menu, int finalScore, int killsTarget) {
+    memset(menu, 0, sizeof(Menu));
+    menu->type = MENU_TYPE_WIN;
+    strncpy(menu->title, "VICTOIRE", sizeof(menu->title) - 1);
+    snprintf(menu->subtitle, sizeof(menu->subtitle),
+             "Objectif atteint : %d/%d ennemis | Score : %d",
+             killsTarget, killsTarget, finalScore);
+    menu->selectedIndex = 0;
+
+    addOption(menu, "Rejouer", MENU_ACTION_RESTART, true);
     addOption(menu, "Menu Principal", MENU_ACTION_QUIT, true);
 }
 
