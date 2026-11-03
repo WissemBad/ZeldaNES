@@ -6,6 +6,7 @@ updates:
       interval: cron
       cronjob: 10 7 26 * *
       timezone: Europe/Paris
+    rebase-strategy: disabled
     open-pull-requests-limit: 1
     groups:
       github-actions-security:
