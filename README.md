@@ -1,13 +1,13 @@
-# NUPRC
+# ZeldaNES
 
-Petit jeu 2D inspiré des Zelda NES, codé en C avec SDL2.
+Petit jeu 2D en C et SDL2, inspiré des Zelda sur NES. Projet personnel sans lien avec Nintendo ; l'exécutable et le projet CMake s'appellent `NUPRC`.
 
 ## Contrôles
 
-- `↑ ↓ ← →` ou `Z Q S D`: déplacement
-- `F`: attaque
-- `P` ou `Échap`: pause
-- `Entrée` / `Espace`: valider dans les menus
+- `↑ ↓ ← →` ou `Z Q S D` : déplacement
+- `F` : attaque
+- `P` ou `Échap` : pause
+- `Entrée` ou `Espace` : valider dans les menus
 
 ## Build
 
@@ -24,7 +24,7 @@ cmake --build build
 - `SDL2_image`
 - `SDL2_mixer`
 
-Exemple (macOS/Homebrew):
+Exemple sous macOS avec Homebrew :
 
 ```bash
 brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
@@ -32,17 +32,13 @@ brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
 
 ## Audio
 
-Toute la config audio est dans:
-
-`assets/meta/audio/audio.cfg`
-
-Tu peux y régler:
+La configuration audio se trouve dans `assets/meta/audio/audio.cfg`. Elle règle :
 - les OST en boucle (`MUSIC_MENU`, `MUSIC_GAMEPLAY`, `MUSIC_GAMEOVER`)
 - les SFX par événement (`SFX_ENEMY_KILLED`, `SFX_WALK`, `SFX_MENU_CLICK`, etc.)
 - les volumes (`MASTER_VOLUME`, `MUSIC_VOLUME`, `SFX_VOLUME`)
 - la fréquence du son de pas (`WALK_INTERVAL_FRAMES`)
 
-Dépose tes fichiers audio dans:
+Les fichiers audio se placent dans :
 - `assets/sounds/music/`
 - `assets/sounds/sfx/`
 
